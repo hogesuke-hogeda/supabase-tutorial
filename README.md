@@ -26,6 +26,7 @@
 
 このリポジトリの devcontainer は `initializeCommand` で host 側から `npx supabase start` を実行します。
 そのため、Supabase CLI は devcontainer 内ではなく host 側の Node.js 実行環境で動く前提です。
+一方で、DB の初期化やマイグレーション適用は devcontainer 内から `bin/init-db.sh` で実行できます。
 
 ## Submodule の初期化と更新
 
@@ -70,7 +71,23 @@ npx supabase start --network-id br-supabase-tutorial-$USER
 - Postgres: `54322`
 - Supabase Studio: `54323`
 
-### 2. Next.js アプリの環境変数を作成
+### 2. DB を初期化（devcontainer 内）
+
+`supabase start` 実行後に、devcontainer 内で以下を実行します。
+
+```bash
+/bin/bash bin/init-db.sh
+```
+
+既定では container 内で一時的に `127.0.0.1:54322` へのプロキシを張り、`supabase db reset --local` を実行して全マイグレーションと `seed.sql` を適用します。
+
+未適用マイグレーションだけを反映する場合は以下です。
+
+```bash
+/bin/bash bin/init-db.sh up
+```
+
+### 3. Next.js アプリの環境変数を作成
 
 ```bash
 cd supabase-nextjs
@@ -95,7 +112,7 @@ ip route | awk '/default/ { print $3 }'
 DATABASE_URL=postgresql://postgres:postgres@172.17.0.1:54322/postgres
 ```
 
-### 3. Next.js アプリを起動
+### 4. Next.js アプリを起動
 
 ```bash
 cd supabase-nextjs
@@ -103,7 +120,7 @@ npm install
 npm run dev
 ```
 
-### 4. ブラウザで確認
+### 5. ブラウザで確認
 
 - アプリ: `http://localhost:3000`
 - Supabase Studio: `http://127.0.0.1:54323`
