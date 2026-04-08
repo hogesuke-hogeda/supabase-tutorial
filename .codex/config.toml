@@ -1,0 +1,16 @@
+model = "gpt-5.4"
+approval_policy = "on-failure"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+
+[mcp_servers.context7]
+# Requires CONTEXT7_API_KEY in the environment.
+args = ["-y", "@upstash/context7-mcp"]
+command = "npx"
+startup_timeout_ms = 20_000
+
+[sandbox_workspace_write]
+network_access = true
+
+[projects."/workspaces/supabase-tutorial"]
+trust_level = "trusted"

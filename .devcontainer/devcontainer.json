@@ -1,0 +1,115 @@
+/**
+ * devcontainerプロパティ一覧: https://containers.dev/implementors/json_reference/
+ *   - devcontainer.jsonで利用できる変数: https://containers.dev/implementors/json_reference/#variables-in-devcontainerjson
+ */
+{
+  /**
+   * プロパティ: https://containers.dev/implementors/json_reference/#general-properties
+   */
+  // UIに表示するdevcontainerの名前
+  "name": "nextjs-supabase-tutorial",
+
+  // ベースイメージに存在する一般ユーザーnodeを利用する
+  "remoteUser": "node",
+  "containerUser": "node",
+
+   // コンテナの環境変数設定
+  "containerEnv": {
+      // ホスト側のプロジェクトディレクトリ
+      "HOST_DIR": "${localWorkspaceFolder}",
+      // コンテナ側のプロジェクトディレクトリ
+      "PROJECT_DIR": "${containerWorkspaceFolder}",
+      // ホスト側のユーザー名
+      "HOST_USER": "${localEnv:USER}",
+      // Docker Network名
+      "DOCKER_NETWORK": "br-supabase-tutorial-${localEnv:USER}",
+      // context7
+      "CONTEXT7_API_KEY": "${localEnv:CONTEXT7_API_KEY}"
+  },
+
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh/,target=/home/node/.ssh/,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.codex/,target=/home/node/.codex/,type=bind,consistency=cached"
+  ],
+
+  // devcontainerに追加する機能の定義
+  // features一覧: https://containers.dev/features
+  "features": {
+    // docker outside of dockerを利用するための設定: https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
+  },
+
+
+  /**
+   * Docierfile関連のプロパティ: https://containers.dev/implementors/json_reference/#image-specific
+   */
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."  // プロジェクトルートをdocker buildのコンテキストに指定
+  },
+
+  // devcontainer 起動時の docker run のオプション
+  "runArgs": [
+    "--network=br-supabase-tutorial-${localEnv:USER}",
+
+    // Codex / bubblewrap が必要とする syscall だけを許可するカスタム seccomp profile
+    // 参考: https://docs.docker.com/engine/security/seccomp/
+    "--security-opt=seccomp=${localWorkspaceFolder}/.devcontainer/seccomp/codex-bwrap.json",
+    // コンテナ内プロセスが追加で特権を獲得することを防ぐ
+    // 参考: https://docs.docker.com/engine/reference/run/#security-configuration
+    "--security-opt=no-new-privileges:true",
+    // Linux capability を全て落として、不要なカーネル権限を与えない
+    // 参考: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
+    "--cap-drop=ALL"
+  ],
+
+  // host networkを使わないため、よく使うポートは明示的にforwardする
+  "forwardPorts": [3000],
+
+
+  /**
+   * ライフサイクル関連のプロパティ: https://containers.dev/implementors/json_reference/#lifecycle-scripts
+   */
+  // コンテナ初期化時にホスト側で実行されるコマンド
+  "initializeCommand": "/bin/bash .devcontainer/init.sh",
+
+  // コンテナが初めて起動した直後にコンテナ内で実行されるコマンド
+  "onCreateCommand": "/bin/bash .devcontainer/on-create.sh",
+
+  // devcontainerにアタッチするたびにコンテナ内で毎回実行されるコマンド
+  "postAttachCommand": "/bin/bash .devcontainer/post-attach.sh",
+
+  /**
+   * VSCodeのプラグイン
+   */
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Docs
+        "hediet.vscode-drawio",
+        "yzhang.markdown-all-in-one",
+        "bierner.github-markdown-preview",
+        "bierner.markdown-mermaid",
+        "jebbs.plantuml",
+
+        // Next.js / TypeScript
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "dsznajder.es7-react-js-snippets",
+
+        // Codex
+        "openai.chatgpt",
+
+        // Git
+        "mhutchie.git-graph",
+
+        // Others
+        "ms-azuretools.vscode-docker",
+        "oderwat.indent-rainbow",
+        "shardulm94.trailing-spaces"
+      ]
+    }
+  }
+}
