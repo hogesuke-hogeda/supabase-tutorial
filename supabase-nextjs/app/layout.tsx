@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Supabase Postgres Check",
-  description: "Minimal Next.js app for checking Supabase Postgres connectivity",
+  title: "supabase-nextjs-tutorial",
+  description: "supabase-nextjs-tutorial",
 };
 
 export default function RootLayout({

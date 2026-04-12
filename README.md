@@ -1,14 +1,13 @@
 # supabase-tutorial
 
-ローカルの Supabase Postgres に Next.js から接続できるかを確認するための最小構成です。
+ローカルの Supabase に Next.js から接続して認証フローを確認するための最小構成です。
 `supabase/` に Supabase CLI 用の設定、`supabase-nextjs/` に接続確認用の Next.js アプリを置いています。
 
 ## できること
 
-- Next.js サーバー側で Postgres に接続する
-- `current_database()`, `now()`, `version()` の結果を画面表示する
-- 接続先ホスト、ポート、DB 名、ユーザー名を確認する
-- devcontainer / Docker 内で `127.0.0.1` を使って失敗しやすいケースに対してヒントを出す
+- Supabase Auth の email/password サインアップとログインを試す
+- Server Component / Server Action / Route Handler / Proxy から Supabase SSR を使う
+- devcontainer / Docker 内でも browser-side と server-side の Supabase 接続先を分けて設定できる
 
 ## ディレクトリ構成
 
@@ -59,12 +58,6 @@ devcontainer を開く場合は、初期化時に以下が host 側で自動実�
 npx supabase start --workdir <repo-root> --network-id br-supabase-tutorial-$USER
 ```
 
-手動で起動する場合は、リポジトリ直下で実行してください。
-
-```bash
-npx supabase start --network-id br-supabase-tutorial-$USER
-```
-
 主要ポートは以下です。
 
 - API: `54321`
@@ -94,23 +87,21 @@ cd supabase-nextjs
 cp .env.local.example .env.local
 ```
 
-デフォルトの `DATABASE_URL` は host 上で Next.js を動かす前提です。
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-```
-
-devcontainer や Docker コンテナ内で Next.js を動かす場合は、`127.0.0.1` ではなくコンテナから見た host 側ゲートウェイ IP に変更してください。
+このプロジェクトでは devcontainer 内で Next.js を動かすため、server-side だけ host 側ゲートウェイ IP を使います。`NEXT_PUBLIC_SUPABASE_URL` はブラウザから到達できる URL のまま `127.0.0.1` を使ってください。
 
 ```bash
 ip route | awk '/default/ { print $3 }'
 ```
 
-この workspace では `172.17.0.1` になる想定です。例:
+host 側ゲートウェイ IP は以下で確認できます。`.env.local` には次のように設定してください。
 
 ```env
-DATABASE_URL=postgresql://postgres:postgres@172.17.0.1:54322/postgres
+SUPABASE_SERVER_URL=http://<gateway-ip>:54321
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
 ```
+
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には `npx supabase status` に表示される publishable key を設定してください。
 
 ### 4. Next.js アプリを起動
 
@@ -124,17 +115,12 @@ npm run dev
 
 - アプリ: `http://localhost:3000`
 - Supabase Studio: `http://127.0.0.1:54323`
+- Supabase Inbox: `http://127.0.0.1:54324`
 
-トップページを開くと、Next.js サーバー側で Postgres に問い合わせた結果が表示されます。
+トップページを開くと `/login` へリダイレクトし、Supabase Auth のログイン画面が表示されます。
+サインアップ後の確認メールは Supabase Inbox を開いて確認できます。メール内のリンクから `/auth/confirm` に遷移すると、確認完了後に `/account` へ進みます。
 
-## 画面に表示される内容
+## 主な画面
 
-- 接続成功 / 失敗
-- 計測時刻
-- 接続レイテンシ
-- データベース名
-- サーバー時刻
-- Postgres バージョン
-- 接続先ホスト / ポート / DB 名 / ユーザー名
-
-接続失敗時はエラーメッセージに加え、devcontainer 内から `127.0.0.1:54322` へ接続している典型的なケースでは設定見直しのヒントも表示されます。
+- `/login`: email / password の入力、ログイン、サインアップ、確認メール案内メッセージ
+- `/account`: ログイン中ユーザーの email 表示、プロフィール編集、サインアウト
