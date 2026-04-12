@@ -24,8 +24,13 @@
   - `v24.14.0` で確認
 
 このリポジトリの devcontainer は `initializeCommand` で host 側から `npx supabase start` を実行します。
-そのため、Supabase CLI は devcontainer 内ではなく host 側の Node.js 実行環境で動く前提です。
-一方で、DB の初期化やマイグレーション適用は devcontainer 内から `bin/init-db.sh` で実行できます。
+そのため、host 側では引き続き Node.js と `npx` が必要です。
+一方で、devcontainer 内には Supabase CLI を同梱しているため、`supabase status` などは `supabase` コマンドを直接実行できます。
+DB の初期化やマイグレーション適用も devcontainer 内から `bin/init-db.sh` で実行でき、CLI が見つかればそれを優先利用します。
+参考:
+- Supabase Docs の CLI ガイド: https://supabase.com/docs/guides/cli/getting-started
+- Supabase Docs のローカル開発ガイド: https://supabase.com/docs/guides/local-development
+- この devcontainer が使っている release asset の配布元: https://github.com/supabase/cli/releases
 
 ## Submodule の初期化と更新
 
@@ -101,7 +106,7 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
 ```
 
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には `npx supabase status` に表示される publishable key を設定してください。
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には devcontainer 内で `supabase status` を実行したときに表示される publishable key を設定してください。
 
 ### 4. Next.js アプリを起動
 

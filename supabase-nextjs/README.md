@@ -17,7 +17,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
 ```
 
 - `<gateway-ip>`: `ip route | awk '/default/ { print $3 }'` の結果
-- `<your-publishable-key>`: `npx supabase status` に表示される publishable key
+- `<your-publishable-key>`: `supabase status` に表示される publishable key
 
 ## Run
 
