@@ -2,18 +2,21 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/supabase-utils.sh"
+
 PROJECT_DIR="${PROJECT_DIR:-}"
 
+TARGET_HOST="${SUPABASE_HOST_GATEWAY:-}"
 TARGET_DB_HOST="${SUPABASE_DB_HOST:-}"
 TARGET_DB_PORT="${SUPABASE_DB_PORT:-54322}"
-TARGET_API_HOST="${SUPABASE_API_HOST:-$TARGET_DB_HOST}"
 TARGET_API_PORT="${SUPABASE_API_PORT:-54321}"
 
 LOCAL_HOST="127.0.0.1"
 LOCAL_DB_PORT="${SUPABASE_LOCAL_DB_PORT:-54322}"
 LOCAL_API_PORT="${SUPABASE_LOCAL_API_PORT:-54321}"
 
-SUPABASE_NETWORK_ID="${SUPABASE_NETWORK_ID:-${DOCKER_NETWORK:-}}"
+DOCKER_NETWORK="${DOCKER_NETWORK:-}"
 MODE="${1:-reset}"
 shift $(( $# > 0 ? 1 : 0 ))
 
@@ -31,45 +34,19 @@ Modes:
   up               Apply only pending migrations
 
 Environment:
+  PROJECT_DIR             Required. Supabase project root in the devcontainer
+                          (provided by devcontainer.json)
+  DOCKER_NETWORK          Required. Docker network for the local stack
+                          (provided by devcontainer.json)
+  SUPABASE_HOST_GATEWAY   Optional override for the Docker host gateway IP
+                          (default: resolved from `ip route`)
   SUPABASE_DB_HOST        Optional override for target DB host
-                          (default: container-visible host gateway IP)
+                          (default: SUPABASE_HOST_GATEWAY)
   SUPABASE_DB_PORT        Optional override for target DB port (default: 54322)
-  SUPABASE_API_HOST       Optional override for target API host
-                          (default: same as SUPABASE_DB_HOST)
   SUPABASE_API_PORT       Optional override for target API port (default: 54321)
   SUPABASE_LOCAL_DB_PORT  Optional override for local DB proxy listen port (default: 54322)
   SUPABASE_LOCAL_API_PORT Optional override for local API proxy listen port (default: 54321)
-  SUPABASE_NETWORK_ID     Optional override for Supabase Docker network ID
-                          (default: DOCKER_NETWORK environment variable)
 EOF
-}
-
-die() {
-  echo "error: $*" >&2
-  exit 1
-}
-
-require_command() {
-  if ! command -v "$1" >/dev/null 2>&1; then
-    die "$1 is not available in this container."
-  fi
-}
-
-run_supabase() {
-  local -a network_args=()
-  if [ -n "$SUPABASE_NETWORK_ID" ]; then
-    network_args+=(--network-id "$SUPABASE_NETWORK_ID")
-  fi
-
-  if command -v supabase >/dev/null 2>&1; then
-    supabase "${network_args[@]}" "$@"
-    return
-  fi
-
-  # Keep the npx cache under /tmp so the script works even when $HOME is read-only.
-  local npx_cache_dir="${NPX_CACHE_DIR:-/tmp/.npm-cache}"
-  mkdir -p "$npx_cache_dir"
-  npm_config_cache="$npx_cache_dir" npx --yes supabase "${network_args[@]}" "$@"
 }
 
 cleanup() {
@@ -97,10 +74,6 @@ validate_mode() {
   esac
 }
 
-resolve_default_target_host() {
-  ip route | awk '/default/ { print $3; exit }'
-}
-
 resolve_target_hosts() {
   # Do not use `--db-url` or Supabase service container names from the devcontainer.
   # `--db-url` is treated as a remote connection by the CLI and hit TLS errors
@@ -108,8 +81,8 @@ resolve_target_hosts() {
   # During `db reset`, container recreation also made name resolution to
   # `supabase_db_supabase-tutorial` unreliable in practice. The host gateway
   # plus published ports stays stable across those restarts.
-  TARGET_DB_HOST_RESOLVED="${TARGET_DB_HOST:-$(resolve_default_target_host)}"
-  TARGET_API_HOST_RESOLVED="${TARGET_API_HOST:-$TARGET_DB_HOST_RESOLVED}"
+  TARGET_DB_HOST_RESOLVED="${TARGET_DB_HOST:-$(resolve_supabase_target_host "$TARGET_HOST")}"
+  TARGET_API_HOST_RESOLVED="$TARGET_DB_HOST_RESOLVED"
 
   if [ -z "$TARGET_DB_HOST_RESOLVED" ]; then
     die "cannot resolve database target host. Ensure Supabase local stack is running before initializing DB."
@@ -123,11 +96,11 @@ require_reachable_database_target() {
 }
 
 is_local_db_reachable() {
-  pg_isready -h "$LOCAL_HOST" -p "$LOCAL_DB_PORT" -d postgres >/dev/null 2>&1
+  is_supabase_local_db_reachable "$LOCAL_HOST" "$LOCAL_DB_PORT"
 }
 
 is_local_api_reachable() {
-  curl -sS -o /dev/null "http://${LOCAL_HOST}:${LOCAL_API_PORT}/rest/v1/" >/dev/null 2>&1
+  is_supabase_local_api_reachable "$LOCAL_HOST" "$LOCAL_API_PORT"
 }
 
 start_tcp_proxy() {
@@ -182,14 +155,14 @@ run_mode() {
       echo "Running: supabase db reset --local"
       (
         cd "$PROJECT_DIR"
-        run_supabase db reset --local "$@"
+        run_supabase_cli "$DOCKER_NETWORK" db reset --local "$@"
       )
       ;;
     up)
       echo "Running: supabase migration up --local"
       (
         cd "$PROJECT_DIR"
-        run_supabase migration up --local "$@"
+        run_supabase_cli "$DOCKER_NETWORK" migration up --local "$@"
       )
       ;;
   esac
@@ -203,9 +176,10 @@ main() {
   if [ -z "$PROJECT_DIR" ]; then
     die "PROJECT_DIR is not set. Run this script from the devcontainer."
   fi
-  if [ -z "$SUPABASE_NETWORK_ID" ]; then
-    die "DOCKER_NETWORK or SUPABASE_NETWORK_ID is not set. Run this script from the devcontainer."
+  if [ -z "$DOCKER_NETWORK" ]; then
+    die "DOCKER_NETWORK is not set. Run this script from the devcontainer."
   fi
+  /bin/bash "${PROJECT_DIR}/bin/start-supabase.sh"
   resolve_target_hosts
   require_reachable_database_target
   ensure_local_db_proxy

@@ -14,19 +14,15 @@
 - `.codex/superpowers/`: 開発用スキル群。Git submodule として管理
 - `supabase/`: Supabase CLI のローカル開発設定
 - `supabase-nextjs/`: 接続確認用の Next.js 16 アプリ
-- `.devcontainer/`: 開発コンテナ設定。初回起動時に host 側で Supabase を立ち上げる
+- `.devcontainer/`: 開発コンテナ設定。attach 時に container 内から Supabase を自動起動する
 
 ## 前提条件
 
 - host 側で Docker が使えること
-- host 側に Node.js と `npm` / `npx` が入っていること
-- 推奨 Node.js は 24 系
-  - `v24.14.0` で確認
 
-このリポジトリの devcontainer は `initializeCommand` で host 側から `npx supabase start` を実行します。
-そのため、host 側では引き続き Node.js と `npx` が必要です。
-一方で、devcontainer 内には Supabase CLI を同梱しているため、`supabase status` などは `supabase` コマンドを直接実行できます。
-DB の初期化やマイグレーション適用も devcontainer 内から `bin/init-db.sh` で実行でき、CLI が見つかればそれを優先利用します。
+このリポジトリの devcontainer は `initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から Supabase を起動します。
+devcontainer 内には Supabase CLI を同梱しているため、`supabase status` や `bin/init-db.sh` も container 内の `supabase` コマンドで完結します。
+`supabase start` の localhost healthcheck は、container 内で `socat` による `127.0.0.1` プロキシを張って通します。
 参考:
 - Supabase Docs の CLI ガイド: https://supabase.com/docs/guides/cli/getting-started
 - Supabase Docs のローカル開発ガイド: https://supabase.com/docs/guides/local-development
@@ -57,11 +53,13 @@ git commit -m "Update superpowers submodule"
 
 ### 1. Supabase を起動
 
-devcontainer を開く場合は、初期化時に以下が host 側で自動実行されます。
+devcontainer に attach すると、毎回 container 内で以下相当が自動実行されます。既に起動済みなら no-op です。
 
 ```bash
-npx supabase start --workdir <repo-root> --network-id br-supabase-tutorial-$USER
+/bin/bash bin/start-supabase.sh
 ```
+
+手動で再実行したい場合も、devcontainer 内で同じコマンドを使ってください。
 
 主要ポートは以下です。
 
@@ -71,7 +69,7 @@ npx supabase start --workdir <repo-root> --network-id br-supabase-tutorial-$USER
 
 ### 2. DB を初期化（devcontainer 内）
 
-`supabase start` 実行後に、devcontainer 内で以下を実行します。
+Supabase 起動後に、devcontainer 内で以下を実行します。
 
 ```bash
 /bin/bash bin/init-db.sh

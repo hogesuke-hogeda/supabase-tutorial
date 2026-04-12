@@ -1,8 +1,6 @@
 #!/bin/bash
 
-set -ex
-
-SCRIPT_DIR=$(cd $(dirname $0); pwd)
+set -euo pipefail
 
 mkdir -p $HOME/.docker
 
@@ -10,3 +8,5 @@ mkdir -p $HOME/.docker
 cat <<EOF > $HOME/.docker/config.json
 {}
 EOF
+
+/bin/bash "${PROJECT_DIR}/bin/start-supabase.sh"

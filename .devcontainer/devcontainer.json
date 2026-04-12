@@ -73,12 +73,14 @@
    * ライフサイクル関連のプロパティ: https://containers.dev/implementors/json_reference/#lifecycle-scripts
    */
   // コンテナ初期化時にホスト側で実行されるコマンド
+  // Docker network の作成だけを host 側で行う
   "initializeCommand": "/bin/bash .devcontainer/init.sh",
 
   // コンテナが初めて起動した直後にコンテナ内で実行されるコマンド
   "onCreateCommand": "/bin/bash .devcontainer/on-create.sh",
 
   // devcontainerにアタッチするたびにコンテナ内で毎回実行されるコマンド
+  // 未起動なら container 内から Supabase local stack を起動する
   "postAttachCommand": "/bin/bash .devcontainer/post-attach.sh",
 
   /**
