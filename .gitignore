@@ -1,3 +1,9 @@
 node_modules/
 .next/
 .env.local
+# Terraform local state
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+terraform/supabase/terraform.tfvars
