@@ -7,5 +7,3 @@ node_modules/
 *.tfstate.*
 crash.log
 terraform/supabase/terraform.tfvars
-*.tfvars
-*.tfvars.json
