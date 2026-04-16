@@ -68,7 +68,7 @@ variable "external_email_enabled" {
 
 variable "password_min_length" {
   type        = number
-  description = "Minimum password length."
+  description = "Minimum password length for the hosted dev baseline; kept at 6 to match the approved plan and local setup."
   default     = 6
 }
 
@@ -101,10 +101,6 @@ resource "supabase_project" "development" {
   name              = var.project_name
   database_password = var.database_password
   region            = var.region
-
-  lifecycle {
-    ignore_changes = [database_password]
-  }
 }
 
 resource "supabase_settings" "development" {
