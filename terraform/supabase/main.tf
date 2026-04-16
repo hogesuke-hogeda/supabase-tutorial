@@ -68,7 +68,7 @@ variable "external_email_enabled" {
 
 variable "password_min_length" {
   type        = number
-  description = "Minimum password length for the hosted dev baseline; kept at 6 to match the approved plan and local setup."
+  description = "Minimum password length."
   default     = 6
 }
 
