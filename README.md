@@ -65,14 +65,14 @@ local Supabase だけを使う場合は、Terraform は不要です。先に loc
 
 `/bin/bash bin/init-db.sh up` を使うと、未適用のマイグレーションだけを反映できます。
 
-Next.js の local 用 env を作成し、`supabase-nextjs/README.md` を見ながら `<gateway-ip>` と `supabase status` の `anon key` を実値に置き換えます。`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には local Supabase の `anon key` を入れます。
+Next.js の local 用 env を作成し、`supabase-nextjs/README.md` を見ながら `<gateway-ip>` と `supabase status` の publishable key を実値に置き換えます。`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には local Supabase の publishable key を入れます。
 
 ```bash
 cd supabase-nextjs
 cp .env.supabase.local.example .env.supabase.local
 ```
 
-`.env.supabase.local` には、`<gateway-ip>` と `<local-anon-key>` を実際の値に置き換えてから使います。`<local-anon-key>` は local Supabase の `supabase status` に表示される `anon key` です。
+`.env.supabase.local` には、`<gateway-ip>` と `<local-publishable-key>` を実際の値に置き換えてから使います。`<local-publishable-key>` は local Supabase の `supabase status` に表示される publishable key です。
 
 ```bash
 npm install
@@ -96,7 +96,7 @@ terraform -chdir=terraform/supabase output
 
 `project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` そのものです。`.env.supabase.cloud` には Terraform の `project_url` 出力をそのまま使います。
 
-Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。こちらは local の `anon key` ではなく、hosted project の `publishable key` です。
+Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。こちらは local の publishable key とは別に、hosted project の publishable key です。
 
 Hosted Supabase でこのチュートリアルの email confirmation をそのまま試す場合は、Supabase 側のメール送信設定にも注意してください。既定の hosted SMTP 制限では確認メールの挙動をローカルと同じように再現できないことがあるため、必要に応じて team member 宛てで試すか、custom SMTP を設定してください。
 

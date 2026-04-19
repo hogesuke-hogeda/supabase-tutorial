@@ -12,16 +12,16 @@ local Supabase と hosted Supabase のどちらにも接続して、Next.js 16 �
 cp .env.supabase.local.example .env.supabase.local
 ```
 
-`.env.supabase.local` は devcontainer / Docker 内で動かす local Supabase につなぐ設定です。`<gateway-ip>` と `supabase status` の `anon key` を実際の値に置き換えます。
+`.env.supabase.local` は devcontainer / Docker 内で動かす local Supabase につなぐ設定です。`<gateway-ip>` と `supabase status` の publishable key を実際の値に置き換えます。
 
 ```env
 SUPABASE_SERVER_URL=http://<gateway-ip>:54321
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-anon-key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key>
 ```
 
-`<gateway-ip>` は `ip route | awk '/default/ { print $3 }'` の結果です。`<local-anon-key>` は local Supabase の `supabase status` に表示される `anon key` です。
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` にはこの local `anon key` を入れます。
+`<gateway-ip>` は `ip route | awk '/default/ { print $3 }'` の結果です。`<local-publishable-key>` は local Supabase の `supabase status` に表示される publishable key です。
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` にはこの local publishable key を入れます。
 
 ### Cloud
 
