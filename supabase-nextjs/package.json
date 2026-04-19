@@ -4,8 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "node scripts/run-next-with-env.mjs local dev",
+    "dev:cloud": "node scripts/run-next-with-env.mjs cloud dev",
     "build": "next build",
     "start": "next start",
+    "test:env": "node --test scripts/supabase-env.test.mjs",
     "lint": "eslint"
   },
   "dependencies": {
