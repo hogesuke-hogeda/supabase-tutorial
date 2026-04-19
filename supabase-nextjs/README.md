@@ -21,6 +21,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-anon-key>
 ```
 
 `<gateway-ip>` は `ip route | awk '/default/ { print $3 }'` の結果です。`<local-anon-key>` は local Supabase の `supabase status` に表示される `anon key` です。
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` にはこの local `anon key` を入れます。
 
 ### Cloud
 
@@ -39,15 +40,21 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<cloud-publishable-key>
 - `<project-ref>`: Terraform の `project_ref` 出力。`supabase link --project-ref <project_ref>` にも使います
 - `<project-url>`: Terraform の `project_url` 出力。`.env.supabase.cloud` にそのままコピーします
 - `<cloud-publishable-key>`: Terraform の `apply` 後に Supabase Dashboard の Project Connect dialog か `Settings > API Keys` で確認する publishable key
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` にはこの hosted publishable key を入れます。
 
 ## Run
 
 ```bash
 npm install
+```
+
+実行するのは `npm run dev:local` か `npm run dev:cloud` のどちらか一方です。local Supabase を使う場合は:
+
+```bash
 npm run dev:local
 ```
 
-local Supabase を使う場合は `npm run dev:local`、hosted Supabase を使う場合は `npm run dev:cloud` を実行します。
+hosted Supabase を使う場合は:
 
 ```bash
 npm run dev:cloud
