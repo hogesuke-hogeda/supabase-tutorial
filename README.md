@@ -51,59 +51,9 @@ git commit -m "Update superpowers submodule"
 
 ## 起動手順
 
-### 1. Hosted Supabase を Terraform で用意する
+### Local workflow
 
-まず `terraform/supabase/terraform.tfvars.example` をコピーして、プロジェクト情報を埋めた `terraform/supabase/terraform.tfvars` を作成します。
-
-```bash
-cp terraform/supabase/terraform.tfvars.example terraform/supabase/terraform.tfvars
-```
-
-Terraform の管理用トークンを環境変数で設定します。
-
-```bash
-export SUPABASE_ACCESS_TOKEN=<your-access-token>
-```
-
-その後、Hosted Supabase を作成・更新します。
-
-```bash
-terraform -chdir=terraform/supabase init
-terraform -chdir=terraform/supabase plan
-terraform -chdir=terraform/supabase apply
-```
-
-`apply` が終わったら出力を確認します。`project_ref` はこのあと `supabase link` に使い、`project_url` は `.env.supabase.cloud` に使います。
-
-```bash
-terraform -chdir=terraform/supabase output
-```
-
-Terraform の apply 後に、Supabase Dashboard の project settings から hosted project の publishable key も確認してください。`.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。
-
-### 2. Supabase CLI を hosted project にリンクする
-
-CLI にまだログインしていない場合は先に認証します。
-
-```bash
-supabase login
-```
-
-Terraform の `project_ref` を使って hosted project にリンクします。
-
-```bash
-supabase link --project-ref <project_ref>
-```
-
-ローカルのマイグレーションを hosted project に反映します。
-
-```bash
-supabase db push --linked
-```
-
-### 3. ローカル Supabase を起動して初期化する
-
-local flow を使う場合は、devcontainer 内で Supabase を起動して DB を初期化します。
+local Supabase だけを使う場合は、Terraform は不要です。先に local stack を起動して DB を初期化します。
 
 ```bash
 /bin/bash bin/start-supabase.sh
@@ -112,32 +62,62 @@ local flow を使う場合は、devcontainer 内で Supabase を起動して DB 
 
 `/bin/bash bin/init-db.sh up` を使うと、未適用のマイグレーションだけを反映できます。
 
-### 4. Next.js アプリの env を用意する
-
-`supabase-nextjs/README.md` では `dev:local` と `dev:cloud` の両方を使えるように、2 つの env ファイルを用意します。必要なら片方だけでも構いませんが、このリポジトリでは両方コピーして実行時に切り替える前提で説明します。
+Next.js の local 用 env を作成し、プレースホルダーを実値に置き換えます。
 
 ```bash
 cd supabase-nextjs
 cp .env.supabase.local.example .env.supabase.local
-cp .env.supabase.cloud.example .env.supabase.cloud
 ```
 
-`.env.supabase.local` は devcontainer / Docker 内で動かす local Supabase 用、`.env.supabase.cloud` は Terraform で作成した hosted Supabase 用です。
-
-### 5. Next.js アプリを起動する
+`.env.supabase.local` には、`<gateway-ip>` と `<local-publishable-key>` を実際の値に置き換えてから使います。
 
 ```bash
 npm install
 npm run dev:local
 ```
 
-local Supabase を使うときは `npm run dev:local`、hosted Supabase を使うときは `npm run dev:cloud` を実行します。
+### Hosted workflow
 
-### 6. ブラウザで確認
+hosted Supabase を使う場合は、まず Terraform で project を作成します。
+
+```bash
+cp terraform/supabase/terraform.tfvars.example terraform/supabase/terraform.tfvars
+export SUPABASE_ACCESS_TOKEN=<your-access-token>
+terraform -chdir=terraform/supabase init
+terraform -chdir=terraform/supabase plan
+terraform -chdir=terraform/supabase apply
+terraform -chdir=terraform/supabase output
+```
+
+`project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` の値として `.env.supabase.cloud` に使います。
+
+Terraform の apply 後に、Supabase Dashboard の project settings から hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。
+
+```bash
+supabase login
+supabase link --project-ref <project_ref>
+supabase db push --linked
+```
+
+Next.js の cloud 用 env を作成し、プレースホルダーを実値に置き換えます。
+
+```bash
+cd supabase-nextjs
+cp .env.supabase.cloud.example .env.supabase.cloud
+```
+
+`.env.supabase.cloud` には `https://<project-ref>.supabase.co` と hosted publishable key を実際の値に置き換えてから使います。
+
+```bash
+npm install
+npm run dev:cloud
+```
+
+### ブラウザで確認
 
 - アプリ: `http://localhost:3000`
 
-トップページを開くと `/login` へリダイレクトし、Supabase Auth のログイン画面が表示されます。設定したプロファイルに応じて、local project か hosted project へ接続します。
+トップページを開くと `/login` へリダイレクトし、Supabase Auth のログイン画面が表示されます。local workflow は local project に、Hosted workflow は hosted project に接続します。
 
 ## 主な画面
 
