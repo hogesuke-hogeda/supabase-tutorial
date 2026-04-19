@@ -89,7 +89,7 @@ terraform -chdir=terraform/supabase apply
 terraform -chdir=terraform/supabase output
 ```
 
-`project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` の値として `.env.supabase.cloud` に使います。
+`project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` そのものです。`.env.supabase.cloud` には Terraform の `project_url` 出力をそのまま使います。
 
 Terraform の apply 後に、Supabase Dashboard の project settings から hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。
 
@@ -106,7 +106,7 @@ cd supabase-nextjs
 cp .env.supabase.cloud.example .env.supabase.cloud
 ```
 
-`.env.supabase.cloud` には `https://<project-ref>.supabase.co` と hosted publishable key を実際の値に置き換えてから使います。
+`.env.supabase.cloud` には Terraform の `project_url` 出力と hosted publishable key を実際の値に置き換えてから使います。`project_url` はすでに `https://<project-ref>.supabase.co` の形式です。
 
 ```bash
 npm install
