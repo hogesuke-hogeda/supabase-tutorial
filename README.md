@@ -51,77 +51,73 @@ git commit -m "Update superpowers submodule"
 
 ## 起動手順
 
-### 1. Supabase を起動
+### 1. Hosted Supabase を Terraform で用意する
 
-devcontainer に attach すると、毎回 container 内で以下相当が自動実行されます。既に起動済みなら no-op です。
-
-```bash
-/bin/bash bin/start-supabase.sh
-```
-
-手動で再実行したい場合も、devcontainer 内で同じコマンドを使ってください。
-
-主要ポートは以下です。
-
-- API: `54321`
-- Postgres: `54322`
-- Supabase Studio: `54323`
-
-### 2. DB を初期化（devcontainer 内）
-
-Supabase 起動後に、devcontainer 内で以下を実行します。
+まず `terraform/supabase/terraform.tfvars.example` をコピーして、プロジェクト情報を埋めた `terraform/supabase/terraform.tfvars` を作成します。
 
 ```bash
-/bin/bash bin/init-db.sh
+cp terraform/supabase/terraform.tfvars.example terraform/supabase/terraform.tfvars
 ```
 
-既定では container 内で一時的に `127.0.0.1:54322` へのプロキシを張り、`supabase db reset --local` を実行して全マイグレーションと `seed.sql` を適用します。
-
-未適用マイグレーションだけを反映する場合は以下です。
+Terraform の管理用トークンを環境変数で設定します。
 
 ```bash
-/bin/bash bin/init-db.sh up
+export SUPABASE_ACCESS_TOKEN=<your-access-token>
 ```
 
-### 3. Next.js アプリの環境変数を作成
+その後、Hosted Supabase を作成・更新します。
 
 ```bash
-cd supabase-nextjs
-cp .env.local.example .env.local
+terraform -chdir=terraform/supabase init
+terraform -chdir=terraform/supabase plan
+terraform -chdir=terraform/supabase apply
 ```
 
-このプロジェクトでは devcontainer 内で Next.js を動かすため、server-side だけ host 側ゲートウェイ IP を使います。`NEXT_PUBLIC_SUPABASE_URL` はブラウザから到達できる URL のまま `127.0.0.1` を使ってください。
+`apply` が終わったら出力を確認します。`project_ref` と `project_url` が後続の CLI 作業に必要です。
 
 ```bash
-ip route | awk '/default/ { print $3 }'
+terraform -chdir=terraform/supabase output
 ```
 
-host 側ゲートウェイ IP は以下で確認できます。`.env.local` には次のように設定してください。
+### 2. Supabase CLI を hosted project にリンクする
 
-```env
-SUPABASE_SERVER_URL=http://<gateway-ip>:54321
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your-publishable-key>
+CLI にまだログインしていない場合は先に認証します。
+
+```bash
+supabase login
 ```
 
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には devcontainer 内で `supabase status` を実行したときに表示される publishable key を設定してください。
+Terraform の `project_ref` を使って hosted project にリンクします。
 
-### 4. Next.js アプリを起動
+```bash
+supabase link --project-ref <project_ref>
+```
+
+ローカルのマイグレーションを hosted project に反映します。
+
+```bash
+supabase db push --linked
+```
+
+### 3. Next.js アプリを起動する
+
+`supabase-nextjs/README.md` の手順に従って、利用するプロファイルに応じた環境変数ファイルを作成してください。
 
 ```bash
 cd supabase-nextjs
+cp .env.supabase.local.example .env.supabase.local
+cp .env.supabase.cloud.example .env.supabase.cloud
 npm install
-npm run dev
+npm run dev:local
 ```
 
-### 5. ブラウザで確認
+`npm run dev:local` はローカル Supabase 向け、`npm run dev:cloud` は hosted Supabase 向けです。
+
+### 4. ブラウザで確認
 
 - アプリ: `http://localhost:3000`
-- Supabase Studio: `http://127.0.0.1:54323`
-- Supabase Inbox: `http://127.0.0.1:54324`
 
-トップページを開くと `/login` へリダイレクトし、Supabase Auth のログイン画面が表示されます。
-サインアップ後の確認メールは Supabase Inbox を開いて確認できます。メール内のリンクから `/auth/confirm` に遷移すると、確認完了後に `/account` へ進みます。
+トップページを開くと `/login` へリダイレクトし、Supabase Auth のログイン画面が表示されます。設定したプロファイルに応じて、local project か hosted project へ接続します。
 
 ## 主な画面
 
