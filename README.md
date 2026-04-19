@@ -98,6 +98,8 @@ terraform -chdir=terraform/supabase output
 
 Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。こちらは local の `anon key` ではなく、hosted project の `publishable key` です。
 
+Hosted Supabase でこのチュートリアルの email confirmation をそのまま試す場合は、Supabase 側のメール送信設定にも注意してください。既定の hosted SMTP 制限では確認メールの挙動をローカルと同じように再現できないことがあるため、必要に応じて team member 宛てで試すか、custom SMTP を設定してください。
+
 ```bash
 supabase login
 supabase link --project-ref <project_ref>
