@@ -73,11 +73,13 @@ terraform -chdir=terraform/supabase plan
 terraform -chdir=terraform/supabase apply
 ```
 
-`apply` が終わったら出力を確認します。`project_ref` と `project_url` が後続の CLI 作業に必要です。
+`apply` が終わったら出力を確認します。`project_ref` はこのあと `supabase link` に使い、`project_url` は `.env.supabase.cloud` に使います。
 
 ```bash
 terraform -chdir=terraform/supabase output
 ```
+
+Terraform の apply 後に、Supabase Dashboard の project settings から hosted project の publishable key も確認してください。`.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。
 
 ### 2. Supabase CLI を hosted project にリンクする
 
@@ -99,21 +101,39 @@ supabase link --project-ref <project_ref>
 supabase db push --linked
 ```
 
-### 3. Next.js アプリを起動する
+### 3. ローカル Supabase を起動して初期化する
 
-`supabase-nextjs/README.md` の手順に従って、利用するプロファイルに応じた環境変数ファイルを作成してください。
+local flow を使う場合は、devcontainer 内で Supabase を起動して DB を初期化します。
+
+```bash
+/bin/bash bin/start-supabase.sh
+/bin/bash bin/init-db.sh
+```
+
+`/bin/bash bin/init-db.sh up` を使うと、未適用のマイグレーションだけを反映できます。
+
+### 4. Next.js アプリの env を用意する
+
+`supabase-nextjs/README.md` では `dev:local` と `dev:cloud` の両方を使えるように、2 つの env ファイルを用意します。必要なら片方だけでも構いませんが、このリポジトリでは両方コピーして実行時に切り替える前提で説明します。
 
 ```bash
 cd supabase-nextjs
 cp .env.supabase.local.example .env.supabase.local
 cp .env.supabase.cloud.example .env.supabase.cloud
+```
+
+`.env.supabase.local` は devcontainer / Docker 内で動かす local Supabase 用、`.env.supabase.cloud` は Terraform で作成した hosted Supabase 用です。
+
+### 5. Next.js アプリを起動する
+
+```bash
 npm install
 npm run dev:local
 ```
 
-`npm run dev:local` はローカル Supabase 向け、`npm run dev:cloud` は hosted Supabase 向けです。
+local Supabase を使うときは `npm run dev:local`、hosted Supabase を使うときは `npm run dev:cloud` を実行します。
 
-### 4. ブラウザで確認
+### 6. ブラウザで確認
 
 - アプリ: `http://localhost:3000`
 

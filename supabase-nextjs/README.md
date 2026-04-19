@@ -1,10 +1,10 @@
 # supabase-nextjs
 
-ローカル Supabase に接続して、Next.js 16 から Supabase Auth の動作を確認するためのアプリです。
+local Supabase と hosted Supabase のどちらにも接続して、Next.js 16 から Supabase Auth の動作を確認するためのアプリです。
 
 ## Setup
 
-このアプリは local Supabase 用と cloud Supabase 用で env ファイルを分けています。利用する方をコピーしてください。
+このアプリは local Supabase 用と cloud Supabase 用で env ファイルを分けています。両方コピーして、実行時に使う方を選んでください。
 
 ```bash
 cp .env.supabase.local.example .env.supabase.local
@@ -25,13 +25,14 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key>
 `.env.supabase.cloud` は hosted Supabase につなぐ設定です。
 
 ```env
-SUPABASE_SERVER_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVER_URL=https://<project-url>
+NEXT_PUBLIC_SUPABASE_URL=https://<project-url>
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<cloud-publishable-key>
 ```
 
-- `<project-ref>`: Terraform の `project_ref` 出力
-- `<cloud-publishable-key>`: hosted project の publishable key
+- `<project-ref>`: Terraform の `project_ref` 出力。`supabase link --project-ref <project_ref>` にも使います
+- `<project-url>`: Terraform の `project_url` 出力。`.env.supabase.cloud` の URL に使います
+- `<cloud-publishable-key>`: Terraform の `apply` 後に Supabase Dashboard の project settings で確認する publishable key
 
 ## Run
 
@@ -40,7 +41,7 @@ npm install
 npm run dev:local
 ```
 
-hosted Supabase を使う場合は以下です。
+local Supabase を使う場合は `npm run dev:local`、hosted Supabase を使う場合は `npm run dev:cloud` を実行します。
 
 ```bash
 npm run dev:cloud
