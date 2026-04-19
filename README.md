@@ -19,6 +19,7 @@
 ## 前提条件
 
 - host 側で Docker が使えること
+- hosted workflow を使う場合は `terraform` と `supabase` CLI が使えること
 
 このリポジトリの devcontainer は `initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から Supabase を起動します。
 devcontainer 内には Supabase CLI を同梱しているため、`supabase status` や `bin/init-db.sh` も container 内の `supabase` コマンドで完結します。
@@ -60,9 +61,11 @@ local Supabase だけを使う場合は、Terraform は不要です。先に loc
 /bin/bash bin/init-db.sh
 ```
 
+これらのコマンドは devcontainer 内で実行する前提です。
+
 `/bin/bash bin/init-db.sh up` を使うと、未適用のマイグレーションだけを反映できます。
 
-Next.js の local 用 env を作成し、プレースホルダーを実値に置き換えます。
+Next.js の local 用 env を作成し、`supabase-nextjs/README.md` を見ながら `<gateway-ip>` と `<local-publishable-key>` を実値に置き換えます。
 
 ```bash
 cd supabase-nextjs
@@ -99,7 +102,7 @@ supabase link --project-ref <project_ref>
 supabase db push --linked
 ```
 
-Next.js の cloud 用 env を作成し、プレースホルダーを実値に置き換えます。
+Next.js の cloud 用 env を作成し、`supabase-nextjs/README.md` を見ながら `project_url` と hosted publishable key を実値に置き換えます。
 
 ```bash
 cd supabase-nextjs

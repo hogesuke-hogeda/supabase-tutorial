@@ -4,10 +4,13 @@ local Supabase と hosted Supabase のどちらにも接続して、Next.js 16 �
 
 ## Setup
 
-このアプリは local Supabase 用と cloud Supabase 用で env ファイルを分けています。使う方だけをコピーして、プレースホルダーを実値に置き換えてから `dev:local` または `dev:cloud` を実行してください。
+このアプリは local Supabase 用と cloud Supabase 用で env ファイルを分けています。local 用と cloud 用はそれぞれ別にコピーし、必要な方のプレースホルダーを実値に置き換えてから `dev:local` または `dev:cloud` を実行してください。
 
 ```bash
 cp .env.supabase.local.example .env.supabase.local
+```
+
+```bash
 cp .env.supabase.cloud.example .env.supabase.cloud
 ```
 
