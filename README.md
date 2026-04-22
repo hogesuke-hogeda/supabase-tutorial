@@ -19,15 +19,18 @@
 ## 前提条件
 
 - host 側で Docker が使えること
-- hosted workflow を使う場合は `terraform` と `supabase` CLI が使えること
+- devcontainer を使えること
+- hosted workflow を使う場合は `SUPABASE_ACCESS_TOKEN` を用意できること
 
 このリポジトリの devcontainer は `initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から Supabase を起動します。
 devcontainer 内には Supabase CLI を同梱しているため、`supabase status` や `bin/init-db.sh` も container 内の `supabase` コマンドで完結します。
+さらに Terraform CLI も同梱しているため、hosted workflow の `terraform` / `supabase` コマンドも devcontainer 内で完結します。
 `supabase start` の localhost healthcheck は、container 内で `socat` による `127.0.0.1` プロキシを張って通します。
 参考:
 - Supabase Docs の CLI ガイド: https://supabase.com/docs/guides/cli/getting-started
 - Supabase Docs のローカル開発ガイド: https://supabase.com/docs/guides/local-development
 - この devcontainer が使っている release asset の配布元: https://github.com/supabase/cli/releases
+- Terraform release 一覧: https://releases.hashicorp.com/terraform/
 
 ## Submodule の初期化と更新
 
@@ -81,9 +84,9 @@ npm run dev:local
 
 ### Hosted workflow
 
-hosted workflow では Terraform をホスト側で実行し、`supabase` CLI はホスト側のシェルか devcontainer で使えます。この README では同じリポジトリ checkout を前提に、`supabase` CLI のコマンドを続けて実行する流れで書いています。
+hosted Supabase を使う場合も、Terraform と `supabase` CLI は devcontainer 内で実行する前提です。同じリポジトリ checkout を devcontainer で開いた状態で、以下を順に実行します。
 
-hosted Supabase を使う場合は、まず Terraform で project を作成します。
+まず Terraform で project を作成します。
 
 ```bash
 cp terraform/supabase/terraform.tfvars.example terraform/supabase/terraform.tfvars
