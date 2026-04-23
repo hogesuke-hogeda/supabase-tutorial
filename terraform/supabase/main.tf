@@ -6,11 +6,6 @@ terraform {
       source  = "supabase/supabase"
       version = "~> 1.0"
     }
-
-    time = {
-      source  = "hashicorp/time"
-      version = "~> 0.13"
-    }
   }
 }
 
@@ -108,15 +103,7 @@ resource "supabase_project" "development" {
   region            = var.region
 }
 
-resource "time_sleep" "wait_for_project_services" {
-  depends_on = [supabase_project.development]
-
-  create_duration = "180s"
-}
-
 resource "supabase_settings" "development" {
-  depends_on = [time_sleep.wait_for_project_services]
-
   project_ref = supabase_project.development.id
 
   api = jsonencode({
