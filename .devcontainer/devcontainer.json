@@ -106,6 +106,10 @@
 
         // Git
         "mhutchie.git-graph",
+        "eamodio.gitlens",
+
+        // Terraform
+        "4ops.terraform",
 
         // Others
         "ms-azuretools.vscode-docker",
