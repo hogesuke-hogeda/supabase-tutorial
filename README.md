@@ -97,6 +97,8 @@ terraform -chdir=terraform/supabase apply
 terraform -chdir=terraform/supabase output
 ```
 
+初回 apply では、Supabase project 作成後に hosted services が起動するまで数分かかることがあります。この Terraform では project 作成後に 180 秒待ってから settings を適用します。それでも `Project Services Unhealthy` が出た場合は、Supabase Dashboard で project が healthy になるまで数分待ってから、同じ `terraform -chdir=terraform/supabase apply` を再実行してください。
+
 `project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` そのものです。`.env.supabase.cloud` には Terraform の `project_url` 出力をそのまま使います。
 
 Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。こちらは local の publishable key とは別に、hosted project の publishable key です。
