@@ -93,11 +93,12 @@ cp terraform/supabase/terraform.tfvars.example terraform/supabase/terraform.tfva
 export SUPABASE_ACCESS_TOKEN=<your-access-token>
 terraform -chdir=terraform/supabase init
 terraform -chdir=terraform/supabase plan
+terraform -chdir=terraform/supabase apply -target=supabase_project.development
 terraform -chdir=terraform/supabase apply
 terraform -chdir=terraform/supabase output
 ```
 
-初回 apply では、Supabase project 作成後に hosted services が起動するまで数分かかることがあります。この Terraform では project 作成後に 180 秒待ってから settings を適用します。それでも `Project Services Unhealthy` が出た場合は、Supabase Dashboard で project が healthy になるまで数分待ってから、同じ `terraform -chdir=terraform/supabase apply` を再実行してください。
+初めて hosted project を作る場合は、先に `terraform -chdir=terraform/supabase apply -target=supabase_project.development` で project だけを作成し、その後の通常 apply で settings を適用します。Supabase project 作成直後は hosted services が完全に起動するまで時間がかかるため、project 作成と settings 適用を同じ apply にまとめないようにしています。既に project が作成済みの場合は、通常の `terraform -chdir=terraform/supabase apply` だけで差分を反映できます。
 
 `project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` そのものです。`.env.supabase.cloud` には Terraform の `project_url` 出力をそのまま使います。
 
