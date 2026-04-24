@@ -4,14 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:local": "node scripts/run-next-with-env.mjs local dev",
-    "dev:cloud": "node scripts/run-next-with-env.mjs cloud dev",
+    "dev:local": "dotenvx run -f .env.supabase.local -- next dev",
+    "dev:cloud": "dotenvx run -f .env.supabase.cloud -- next dev",
     "build": "next build",
     "start": "next start",
-    "test:env": "node --test scripts/supabase-env.test.mjs",
     "lint": "eslint"
   },
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.62.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
     "next": "^16.2.3",

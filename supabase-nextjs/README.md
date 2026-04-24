@@ -4,7 +4,7 @@ local Supabase と hosted Supabase のどちらにも接続して、Next.js 16 �
 
 ## Setup
 
-このアプリは local Supabase 用と cloud Supabase 用で env ファイルを分けています。local 用と cloud 用はそれぞれ別に作成し、必要な方のプレースホルダーを実値に置き換えてから `dev:local` または `dev:cloud` を実行してください。
+このアプリは local Supabase 用と cloud Supabase 用で env ファイルを分けています。local 用と cloud 用はそれぞれ別に作成し、必要な方のファイルを `dotenvx` 経由で読み込んで起動します。
 
 ### Local
 
@@ -48,6 +48,8 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<cloud-publishable-key>
 npm install
 ```
 
+`npm install` で `dotenvx` も入るので、追加のラッパースクリプトは不要です。
+
 実行するのは `npm run dev:local` か `npm run dev:cloud` のどちらか一方です。local Supabase を使う場合は:
 
 ```bash
@@ -59,5 +61,7 @@ hosted Supabase を使う場合は:
 ```bash
 npm run dev:cloud
 ```
+
+どちらのコマンドも、対応する env ファイルを `dotenvx run -f ... -- next dev` で読み込んで起動します。
 
 ブラウザで `http://localhost:3000` を開いて確認します。
