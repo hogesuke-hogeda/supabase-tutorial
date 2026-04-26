@@ -72,6 +72,11 @@ variable "site_url" {
     condition     = can(regex("^https?://", var.site_url))
     error_message = "site_url must start with http:// or https://."
   }
+
+  validation {
+    condition     = !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", var.site_url))
+    error_message = "site_url must not use the reserved .example placeholder domain."
+  }
 }
 
 variable "production_site_url" {
@@ -81,6 +86,11 @@ variable "production_site_url" {
   validation {
     condition     = can(regex("^https?://", var.production_site_url))
     error_message = "production_site_url must start with http:// or https://."
+  }
+
+  validation {
+    condition     = !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", var.production_site_url))
+    error_message = "production_site_url must not use the reserved .example placeholder domain."
   }
 }
 
@@ -93,6 +103,13 @@ variable "preview_site_url" {
   validation {
     condition     = var.preview_site_url == null || can(regex("^https?://", var.preview_site_url))
     error_message = "preview_site_url must start with http:// or https://."
+  }
+
+  validation {
+    condition = var.preview_site_url == null || !can(
+      regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", var.preview_site_url)
+    )
+    error_message = "preview_site_url must not use the reserved .example placeholder domain."
   }
 }
 
@@ -110,6 +127,14 @@ variable "additional_redirect_urls" {
     ])
     error_message = "additional_redirect_urls entries must start with http:// or https://."
   }
+
+  validation {
+    condition = alltrue([
+      for url in var.additional_redirect_urls :
+      !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", url))
+    ])
+    error_message = "additional_redirect_urls entries must not use the reserved .example placeholder domain."
+  }
 }
 
 variable "production_additional_redirect_urls" {
@@ -121,6 +146,14 @@ variable "production_additional_redirect_urls" {
       for url in var.production_additional_redirect_urls : can(regex("^https?://", url))
     ])
     error_message = "production_additional_redirect_urls entries must start with http:// or https://."
+  }
+
+  validation {
+    condition = alltrue([
+      for url in var.production_additional_redirect_urls :
+      !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", url))
+    ])
+    error_message = "production_additional_redirect_urls entries must not use the reserved .example placeholder domain."
   }
 }
 
@@ -135,6 +168,14 @@ variable "preview_additional_redirect_urls" {
       for url in var.preview_additional_redirect_urls : can(regex("^https?://", url))
     ])
     error_message = "preview_additional_redirect_urls entries must start with http:// or https://."
+  }
+
+  validation {
+    condition = var.preview_additional_redirect_urls == null || alltrue([
+      for url in var.preview_additional_redirect_urls :
+      !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", url))
+    ])
+    error_message = "preview_additional_redirect_urls entries must not use the reserved .example placeholder domain."
   }
 }
 
