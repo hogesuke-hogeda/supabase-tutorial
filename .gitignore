@@ -7,3 +7,5 @@ node_modules/
 *.tfstate.*
 crash.log
 terraform/supabase/terraform.tfvars
+terraform/vercel/terraform.tfvars
+.worktrees/

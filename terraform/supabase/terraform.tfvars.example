@@ -1,20 +1,40 @@
 organization_id = "your-personal-org-slug"
-project_name    = "supabase-tutorial-dev"
-database_password = "replace-with-a-strong-password"
+
+production_project_name = "supabase-tutorial-prod"
+preview_project_name    = "supabase-tutorial-preview"
+
+production_database_password = "replace-with-a-strong-password"
+preview_database_password    = "replace-with-a-different-strong-password"
 
 region = "ap-northeast-1"
 
-site_url = "http://localhost:3000"
-additional_redirect_urls = [
-  "http://127.0.0.1:3000",
-  "http://localhost:3000",
+production_site_url = "https://your-production-domain.example"
+production_additional_redirect_urls = [
+  "http://127.0.0.1:3000/auth/confirm",
+  "http://localhost:3000/auth/confirm",
+  "https://your-production-domain.example/auth/confirm",
 ]
 
-jwt_expiry                                       = 3600
-disable_signup                                   = false
-external_email_enabled                           = true
-password_min_length                              = 6
-mailer_autoconfirm                               = false
-mailer_secure_email_change_enabled               = true
+preview_site_url = "https://preview.your-production-domain.example"
+preview_additional_redirect_urls = [
+  "http://127.0.0.1:3000/auth/confirm",
+  "http://localhost:3000/auth/confirm",
+  "https://*-your-team-or-account-slug.vercel.app/auth/confirm",
+]
+
+# Deprecated preview aliases can still feed preview-only values.
+# production_* inputs are still required because this stack now manages both
+# production and preview projects.
+# project_name              = "supabase-tutorial-preview"
+# database_password         = "replace-with-a-strong-password"
+# site_url                  = "http://localhost:3000"
+# additional_redirect_urls  = ["http://127.0.0.1:3000/auth/confirm"]
+
+jwt_expiry                                        = 3600
+disable_signup                                    = false
+external_email_enabled                            = true
+password_min_length                               = 6
+mailer_autoconfirm                                = false
+mailer_secure_email_change_enabled                = true
 security_update_password_require_reauthentication = false
-smtp_max_frequency                               = 1
+smtp_max_frequency                                = 1

@@ -21,6 +21,7 @@
 - host 側で Docker が使えること
 - devcontainer を使えること
 - hosted workflow を使う場合は `SUPABASE_ACCESS_TOKEN` を用意できること
+- Vercel workflow を使う場合は `VERCEL_API_TOKEN` と Vercel team slug or ID を用意できること
 
 このリポジトリの devcontainer は `initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から Supabase を起動します。
 devcontainer 内には Supabase CLI を同梱しているため、`supabase status` や `bin/init-db.sh` も container 内の `supabase` コマンドで完結します。
@@ -86,23 +87,24 @@ npm run dev:local
 
 hosted Supabase を使う場合も、Terraform と `supabase` CLI は devcontainer 内で実行する前提です。同じリポジトリ checkout を devcontainer で開いた状態で、以下を順に実行します。
 
-まず Terraform で project を作成します。
+まず Supabase の production / preview project を Terraform で作成します。
 
 ```bash
 cp terraform/supabase/terraform.tfvars.example terraform/supabase/terraform.tfvars
 export SUPABASE_ACCESS_TOKEN=<your-access-token>
 terraform -chdir=terraform/supabase init
 terraform -chdir=terraform/supabase plan
-terraform -chdir=terraform/supabase apply -target=supabase_project.development
+terraform -chdir=terraform/supabase apply -target=supabase_project.preview
+terraform -chdir=terraform/supabase apply -target=supabase_project.production
 terraform -chdir=terraform/supabase apply
 terraform -chdir=terraform/supabase output
 ```
 
-初めて hosted project を作る場合は、先に `terraform -chdir=terraform/supabase apply -target=supabase_project.development` で project だけを作成し、その後の通常 apply で settings を適用します。Supabase project 作成直後は hosted services が完全に起動するまで時間がかかるため、project 作成と settings 適用を同じ apply にまとめないようにしています。既に project が作成済みの場合は、通常の `terraform -chdir=terraform/supabase apply` だけで差分を反映できます。
+初めて hosted project を作る場合は、先に `supabase_project.preview` と `supabase_project.production` を target apply で作成し、その後の通常 apply で settings を適用します。Supabase project 作成直後は hosted services が完全に起動するまで時間がかかるため、project 作成と settings 適用を同じ apply にまとめないようにしています。既に project が作成済みの場合は、通常の `terraform -chdir=terraform/supabase apply` だけで差分を反映できます。
 
-`project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` そのものです。`.env.supabase.cloud` には Terraform の `project_url` 出力をそのまま使います。
+Terraform は `production_project_ref`, `production_project_url`, `preview_project_ref`, `preview_project_url` を出力します。`supabase link --project-ref <project_ref>` には利用したい環境の `project_ref` を使い、`.env.supabase.cloud` には利用したい環境の `project_url` をそのまま使います。
 
-Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。こちらは local の publishable key とは別に、hosted project の publishable key です。
+Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で production / preview それぞれの publishable key を取得します。`.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には接続先に対応した hosted project の publishable key を使います。こちらは local の publishable key とは別です。
 
 Hosted Supabase でこのチュートリアルの email confirmation をそのまま試す場合は、Supabase 側のメール送信設定にも注意してください。既定の hosted SMTP 制限では確認メールの挙動をローカルと同じように再現できないことがあるため、必要に応じて team member 宛てで試すか、custom SMTP を設定してください。
 
@@ -119,12 +121,41 @@ cd supabase-nextjs
 cp .env.supabase.cloud.example .env.supabase.cloud
 ```
 
-`.env.supabase.cloud` には Terraform の `project_url` 出力と hosted publishable key を実際の値に置き換えてから使います。`project_url` はすでに `https://<project-ref>.supabase.co` の形式です。
+`.env.supabase.cloud` には Terraform の `preview_project_url` か `production_project_url` と hosted publishable key を実際の値に置き換えてから使います。`project_url` はすでに `https://<project-ref>.supabase.co` の形式です。local で hosted Supabase を確認するときは `SITE_URL=http://localhost:3000` も入れておきます。
 
 ```bash
 npm install
 npm run dev:cloud
 ```
+
+### Vercel workflow
+
+Vercel を使う場合は、Supabase の production / preview project を作成したあとに Vercel project を Terraform で作成します。
+
+```bash
+cp terraform/vercel/terraform.tfvars.example terraform/vercel/terraform.tfvars
+export VERCEL_API_TOKEN=<your-vercel-api-token>
+terraform -chdir=terraform/vercel init
+terraform -chdir=terraform/vercel plan
+terraform -chdir=terraform/vercel apply
+terraform -chdir=terraform/vercel output
+```
+
+`terraform/vercel/terraform.tfvars` には以下を入れます。
+
+- `team_id`: Vercel team slug または ID
+- `github_repository`: `owner/repo` 形式の GitHub repository
+- `production_supabase_url`: Terraform の `production_project_url`
+- `preview_supabase_url`: Terraform の `preview_project_url`
+- `*_publishable_key`: 各 Supabase project の publishable key
+
+この stack は Vercel Project を作成し、`supabase-nextjs` を root directory に設定します。さらに:
+
+- `Production` env に production Supabase を設定
+- `Preview` env に preview Supabase を設定
+- `Automatically expose System Environment Variables` を有効化
+
+これで `main` への push が Production Deployments、PR が Preview Deployments になります。Next.js 側は Vercel 上で `VERCEL_URL` / `VERCEL_PROJECT_PRODUCTION_URL` を使って confirmation redirect を解決します。
 
 ### ブラウザで確認
 
