@@ -104,6 +104,8 @@ terraform -chdir=terraform/supabase output
 
 Terraform は `production_project_ref`, `production_project_url`, `preview_project_ref`, `preview_project_url` を出力します。`supabase link --project-ref <project_ref>` には利用したい環境の `project_ref` を使い、`.env.supabase.cloud` には利用したい環境の `project_url` をそのまま使います。
 
+`terraform/supabase/terraform.tfvars` の `production_site_url` / `preview_site_url` と redirect allow list は、`.example` のプレースホルダを残したまま apply しないでください。Supabase Auth は `redirectTo` が許可されないと `site_url` にフォールバックするため、ここに placeholder が残っていると確認メールや認証後の遷移先が `https://...example` になります。Vercel Preview を許可する場合は `preview_additional_redirect_urls` に `https://*-<your-team-or-account-slug>.vercel.app/**` のような wildcard を実値で入れます。
+
 Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で production / preview それぞれの publishable key を取得します。`.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には接続先に対応した hosted project の publishable key を使います。こちらは local の publishable key とは別です。
 
 Hosted Supabase でこのチュートリアルの email confirmation をそのまま試す場合は、Supabase 側のメール送信設定にも注意してください。既定の hosted SMTP 制限では確認メールの挙動をローカルと同じように再現できないことがあるため、必要に応じて team member 宛てで試すか、custom SMTP を設定してください。
