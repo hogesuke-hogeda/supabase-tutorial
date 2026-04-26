@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { resolveDeploymentUrl } from '@/lib/deployment-url'
@@ -29,7 +30,8 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()
-  const deploymentUrl = resolveDeploymentUrl()
+  const requestHeaders = await headers()
+  const deploymentUrl = resolveDeploymentUrl(process.env, requestHeaders)
 
   // type-casting here for convenience
   // in practice, you should validate your inputs

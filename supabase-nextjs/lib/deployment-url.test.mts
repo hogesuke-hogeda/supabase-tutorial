@@ -3,6 +3,14 @@ import assert from 'node:assert/strict'
 
 import { resolveDeploymentUrl } from './deployment-url.ts'
 
+function createHeaders(headers: Record<string, string>) {
+  return {
+    get(name: string) {
+      return headers[name.toLowerCase()] ?? null
+    },
+  }
+}
+
 test('uses VERCEL_URL and normalizes it to https', () => {
   assert.equal(
     resolveDeploymentUrl({
@@ -22,6 +30,35 @@ test('uses the canonical production URL on Vercel production', () => {
       SITE_URL: 'https://fallback.example.com',
     }),
     'https://my-site.com',
+  )
+})
+
+test('uses the request origin before SITE_URL for preview signups', () => {
+  assert.equal(
+    resolveDeploymentUrl(
+      {
+        SITE_URL: 'https://your-production-domain.example',
+      },
+      createHeaders({
+        origin: 'https://preview-app-git-feature-branch.vercel.app',
+      }),
+    ),
+    'https://preview-app-git-feature-branch.vercel.app',
+  )
+})
+
+test('builds the deployment URL from forwarded host headers when origin is absent', () => {
+  assert.equal(
+    resolveDeploymentUrl(
+      {
+        SITE_URL: 'https://your-production-domain.example',
+      },
+      createHeaders({
+        'x-forwarded-host': 'preview-app-git-feature-branch.vercel.app',
+        'x-forwarded-proto': 'https',
+      }),
+    ),
+    'https://preview-app-git-feature-branch.vercel.app',
   )
 })
 
