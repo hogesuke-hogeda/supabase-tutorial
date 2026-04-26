@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+import { resolveDeploymentUrl } from '@/lib/deployment-url'
 import { createClient } from '@/lib/supabase/server'
 import { getSignupRedirectPath } from './signup-result'
 
@@ -28,12 +29,20 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()
+  const deploymentUrl = resolveDeploymentUrl()
 
   // type-casting here for convenience
   // in practice, you should validate your inputs
   const data = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
+    ...(deploymentUrl
+      ? {
+          options: {
+            emailRedirectTo: `${deploymentUrl}/auth/confirm`,
+          },
+        }
+      : {}),
   }
 
   const { data: signUpData, error } = await supabase.auth.signUp(data)

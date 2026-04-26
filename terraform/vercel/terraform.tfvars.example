@@ -1,0 +1,13 @@
+team_id           = "your-team-slug"
+project_name      = "supabase-tutorial"
+github_repository = "your-github-org-or-user/supabase-tutorial"
+
+production_branch = "main"
+root_directory    = "supabase-nextjs"
+node_version      = "22.x"
+
+production_supabase_url             = "https://your-production-project-ref.supabase.co"
+production_supabase_publishable_key = "sb_publishable_prod_replace_me"
+
+preview_supabase_url             = "https://your-preview-project-ref.supabase.co"
+preview_supabase_publishable_key = "sb_publishable_preview_replace_me"
