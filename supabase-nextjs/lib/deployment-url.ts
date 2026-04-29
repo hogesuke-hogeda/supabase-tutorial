@@ -12,7 +12,7 @@ export function resolveDeploymentUrl(
     return explicitUrl
   }
 
-  const vercelEnvironment = env.VERCEL_TARGET_ENV?.trim() || env.VERCEL_ENV?.trim()
+  const vercelEnvironment = env.VERCEL_ENV?.trim()
   const productionUrl = normalizeVercelUrl(env.VERCEL_PROJECT_PRODUCTION_URL)
 
   if (vercelEnvironment === 'production' && productionUrl) {
@@ -23,6 +23,12 @@ export function resolveDeploymentUrl(
 
   if (requestUrl) {
     return requestUrl
+  }
+
+  const branchUrl = normalizeVercelUrl(env.VERCEL_BRANCH_URL)
+
+  if (vercelEnvironment === 'preview' && branchUrl) {
+    return branchUrl
   }
 
   const vercelUrl = normalizeVercelUrl(env.VERCEL_URL)

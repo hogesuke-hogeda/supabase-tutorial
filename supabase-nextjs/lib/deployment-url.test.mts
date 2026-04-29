@@ -24,12 +24,33 @@ test('uses VERCEL_URL and normalizes it to https', () => {
 test('uses the canonical production URL on Vercel production', () => {
   assert.equal(
     resolveDeploymentUrl({
+      VERCEL_TARGET_ENV: 'production',
       VERCEL_ENV: 'production',
       VERCEL_URL: 'my-site-abc123.vercel.app',
       VERCEL_PROJECT_PRODUCTION_URL: 'my-site.com',
       SITE_URL: 'https://fallback.example.com',
     }),
     'https://my-site.com',
+  )
+})
+
+test('does not use the production URL on preview deployments just because VERCEL_TARGET_ENV is production', () => {
+  assert.equal(
+    resolveDeploymentUrl(
+      {
+        VERCEL_TARGET_ENV: 'production',
+        VERCEL_ENV: 'preview',
+        VERCEL_URL: 'my-site-abc123.vercel.app',
+        VERCEL_BRANCH_URL: 'my-site-git-feature-branch.vercel.app',
+        VERCEL_PROJECT_PRODUCTION_URL: 'supabase-tutorial-zeta.vercel.app',
+        SITE_URL: 'https://supabase-tutorial-zeta.vercel.app',
+      },
+      createHeaders({
+        host: 'my-site-git-feature-branch.vercel.app',
+        'x-forwarded-proto': 'https',
+      }),
+    ),
+    'https://my-site-git-feature-branch.vercel.app',
   )
 })
 
@@ -45,6 +66,18 @@ test('prefers an explicit current URL over the canonical production URL', () => 
       undefined,
       'https://preview-app-git-feature-branch.vercel.app',
     ),
+    'https://preview-app-git-feature-branch.vercel.app',
+  )
+})
+
+test('uses VERCEL_BRANCH_URL on preview deployments when request headers are unavailable', () => {
+  assert.equal(
+    resolveDeploymentUrl({
+      VERCEL_ENV: 'preview',
+      VERCEL_BRANCH_URL: 'preview-app-git-feature-branch.vercel.app',
+      VERCEL_PROJECT_PRODUCTION_URL: 'supabase-tutorial-zeta.vercel.app',
+      SITE_URL: 'https://supabase-tutorial-zeta.vercel.app',
+    }),
     'https://preview-app-git-feature-branch.vercel.app',
   )
 })

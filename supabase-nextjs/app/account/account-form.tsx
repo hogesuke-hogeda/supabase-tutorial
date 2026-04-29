@@ -1,19 +1,16 @@
 import { updateProfile } from './actions'
+import { type ProfileRecord } from '@/lib/account-profile'
 
 type Claims = { sub: string; email?: string; [key: string]: unknown }
-type Profile = {
-  full_name: string | null
-  username: string | null
-  website: string | null
-  avatar_url: string | null
-}
 
 export default function AccountForm({
   claims,
   profile,
+  profileStoreAvailable,
 }: {
   claims: Claims | null
-  profile: Profile | null
+  profile: ProfileRecord | null
+  profileStoreAvailable: boolean
 }) {
   return (
     <div className="form-widget">
@@ -24,19 +21,45 @@ export default function AccountForm({
         </div>
         <div>
           <label htmlFor="fullName">Full Name</label>
-          <input id="fullName" name="fullName" type="text" defaultValue={profile?.full_name ?? ''} />
+          <input
+            id="fullName"
+            name="fullName"
+            type="text"
+            defaultValue={profile?.full_name ?? ''}
+            disabled={!profileStoreAvailable}
+          />
         </div>
         <div>
           <label htmlFor="username">Username</label>
-          <input id="username" name="username" type="text" defaultValue={profile?.username ?? ''} />
+          <input
+            id="username"
+            name="username"
+            type="text"
+            defaultValue={profile?.username ?? ''}
+            disabled={!profileStoreAvailable}
+          />
         </div>
         <div>
           <label htmlFor="website">Website</label>
-          <input id="website" name="website" type="url" defaultValue={profile?.website ?? ''} />
+          <input
+            id="website"
+            name="website"
+            type="url"
+            defaultValue={profile?.website ?? ''}
+            disabled={!profileStoreAvailable}
+          />
         </div>
 
+        {!profileStoreAvailable ? (
+          <p>Profile storage is not available in this Supabase project yet. Run the linked database migrations.</p>
+        ) : null}
+
         <div>
-          <button className="button primary block" type="submit" disabled={!claims?.sub}>
+          <button
+            className="button primary block"
+            type="submit"
+            disabled={!claims?.sub || !profileStoreAvailable}
+          >
             Update
           </button>
         </div>
