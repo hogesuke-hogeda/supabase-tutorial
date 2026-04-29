@@ -6,9 +6,11 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
-  const { data: claimsData } = await supabase.auth.getClaims()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const userId = claimsData?.claims?.sub
+  const userId = user?.id
   if (!userId) {
     redirect('/login')
   }

@@ -4,7 +4,14 @@ type RequestHeaders = Pick<Headers, 'get'>
 export function resolveDeploymentUrl(
   env: DeploymentEnv = process.env,
   requestHeaders?: RequestHeaders,
+  preferredUrl?: string,
 ) {
+  const explicitUrl = normalizeAbsoluteUrl(preferredUrl)
+
+  if (explicitUrl) {
+    return explicitUrl
+  }
+
   const vercelEnvironment = env.VERCEL_TARGET_ENV?.trim() || env.VERCEL_ENV?.trim()
   const productionUrl = normalizeVercelUrl(env.VERCEL_PROJECT_PRODUCTION_URL)
 

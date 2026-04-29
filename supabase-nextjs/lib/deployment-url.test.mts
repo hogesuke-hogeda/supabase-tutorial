@@ -33,6 +33,22 @@ test('uses the canonical production URL on Vercel production', () => {
   )
 })
 
+test('prefers an explicit current URL over the canonical production URL', () => {
+  assert.equal(
+    resolveDeploymentUrl(
+      {
+        VERCEL_ENV: 'production',
+        VERCEL_URL: 'my-site-abc123.vercel.app',
+        VERCEL_PROJECT_PRODUCTION_URL: 'supabase-tutorial-zeta.vercel.app',
+        SITE_URL: 'https://supabase-tutorial-zeta.vercel.app',
+      },
+      undefined,
+      'https://preview-app-git-feature-branch.vercel.app',
+    ),
+    'https://preview-app-git-feature-branch.vercel.app',
+  )
+})
+
 test('uses the request origin before SITE_URL for preview signups', () => {
   assert.equal(
     resolveDeploymentUrl(
