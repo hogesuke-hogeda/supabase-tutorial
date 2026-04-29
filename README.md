@@ -106,6 +106,8 @@ Terraform は `production_project_ref`, `production_project_url`, `preview_proje
 
 `terraform/supabase/terraform.tfvars` の `production_site_url` / `preview_site_url` と redirect allow list は、`.example` のプレースホルダを残したまま apply しないでください。Supabase Auth は `redirectTo` が許可されないと `site_url` にフォールバックするため、ここに placeholder が残っていると確認メールや認証後の遷移先が `https://...example` になります。Vercel Preview を許可する場合は `preview_vercel_team_slug` を実値で入れるか、`preview_additional_redirect_urls` に `https://*-<your-team-or-account-slug>.vercel.app/**` のような wildcard を実値で入れます。
 
+`production_site_url` / `preview_site_url` に custom domain や固定 alias を使わず、Vercel 側で作成された URL を使う場合は、その値は Vercel project 作成後、必要なら最初の Production / Preview deployment 後に確定します。その場合は、いったん `supabase_project.preview` / `supabase_project.production` の target apply で hosted project だけ先に作成し、Vercel 設定と初回 deploy を済ませたあとで `terraform/supabase/terraform.tfvars` の該当値を実 URL に更新して `terraform -chdir=terraform/supabase apply` をやり直してください。
+
 さらに hosted Supabase の confirmation email template は local の `supabase/config.toml` だけでは反映されません。このリポジトリでは Terraform の `supabase_settings` から hosted project の confirmation template も管理し、確認メールが `{{ .RedirectTo }}` ベースで Next.js の `/auth/confirm` を踏むようにしています。Terraform apply をしていない hosted project では、この修正は反映されません。
 
 Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で production / preview それぞれの publishable key を取得します。`.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には接続先に対応した hosted project の publishable key を使います。こちらは local の publishable key とは別です。
@@ -160,6 +162,8 @@ terraform -chdir=terraform/vercel output
 - `Automatically expose System Environment Variables` を有効化
 
 これで `main` への push が Production Deployments、PR が Preview Deployments になります。Next.js 側は Vercel 上で `VERCEL_URL` / `VERCEL_PROJECT_PRODUCTION_URL` を使って confirmation redirect を解決します。
+
+custom domain などの固定 URL をまだ決めていない場合は、ここで Vercel project を作成して初回 deploy を通したあとに、Vercel 上で確定した production / preview の URL を確認し、`terraform/supabase/terraform.tfvars` の `production_site_url` / `preview_site_url` を更新して `terraform -chdir=terraform/supabase apply` を再実行します。
 
 ### ブラウザで確認
 
