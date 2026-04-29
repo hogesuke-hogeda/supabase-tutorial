@@ -1,6 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createRouteHandlerClient } from '@/lib/supabase/route-handler'
 
 // Creating a handler to a GET request to route /auth/confirm
 export async function GET(request: NextRequest) {
@@ -16,15 +16,16 @@ export async function GET(request: NextRequest) {
   redirectTo.searchParams.delete('type')
 
   if (token_hash && type) {
-    const supabase = await createClient()
+    redirectTo.searchParams.delete('next')
+    const response = NextResponse.redirect(redirectTo)
+    const supabase = createRouteHandlerClient(request, response)
 
     const { error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
     })
     if (!error) {
-      redirectTo.searchParams.delete('next')
-      return NextResponse.redirect(redirectTo)
+      return response
     }
   }
 

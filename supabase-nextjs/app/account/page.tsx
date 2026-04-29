@@ -1,19 +1,25 @@
+import { redirect } from 'next/navigation'
+
 import AccountForm from './account-form'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function Account() {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const { data: claimsData } = await supabase.auth.getClaims()
-  const claims = claimsData?.claims ?? null
+  if (!user) {
+    redirect('/login')
+  }
 
   let profile = null
 
-  if (claims?.sub) {
+  if (user.id) {
     const { data, error, status } = await supabase
       .from('profiles')
       .select(`full_name, username, website, avatar_url`)
-      .eq('id', claims.sub)
+      .eq('id', user.id)
       .single()
 
     if (error && status !== 406) {
@@ -23,5 +29,5 @@ export default async function Account() {
     profile = data
   }
 
-  return <AccountForm claims={claims} profile={profile} />
+  return <AccountForm claims={{ sub: user.id, email: user.email }} profile={profile} />
 }
