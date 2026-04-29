@@ -161,7 +161,16 @@ terraform -chdir=terraform/vercel output
 - `Preview` env に preview Supabase を設定
 - `Automatically expose System Environment Variables` を有効化
 
-これで `main` への push が Production Deployments、PR が Preview Deployments になります。Next.js 側は Vercel 上で `VERCEL_URL` / `VERCEL_PROJECT_PRODUCTION_URL` を使って confirmation redirect を解決します。
+初回は、Preview の挙動確認より先に `main` を一度 push して Production Deployment を作っておきます。変更ファイルが無ければ空コミットで十分です。
+
+```bash
+git switch main
+git pull --ff-only origin main
+git commit --allow-empty -m "chore: trigger production deploy"
+git push origin main
+```
+
+その後は `main` への push が Production Deployments、PR や feature branch への push が Preview Deployments になります。Next.js 側は Vercel 上で `VERCEL_URL` / `VERCEL_PROJECT_PRODUCTION_URL` を使って confirmation redirect を解決します。
 
 custom domain などの固定 URL をまだ決めていない場合は、ここで Vercel project を作成して初回 deploy を通したあとに、Vercel 上で確定した production / preview の URL を確認し、`terraform/supabase/terraform.tfvars` の `production_site_url` / `preview_site_url` を更新して `terraform -chdir=terraform/supabase apply` を再実行します。
 
