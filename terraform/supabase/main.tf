@@ -179,6 +179,13 @@ variable "preview_additional_redirect_urls" {
   }
 }
 
+variable "preview_vercel_team_slug" {
+  type        = string
+  description = "Vercel team or account slug used to derive the preview redirect wildcard."
+  default     = null
+  nullable    = true
+}
+
 variable "jwt_expiry" {
   type        = number
   description = "JWT expiry in seconds."
@@ -228,6 +235,8 @@ variable "smtp_max_frequency" {
 }
 
 locals {
+  confirmation_email_template_content = trimspace(file("${path.root}/../../supabase/templates/confirmation.html"))
+
   common_auth_settings = {
     disable_signup                                    = var.disable_signup
     external_email_enabled                            = var.external_email_enabled
@@ -235,16 +244,23 @@ locals {
     password_min_length                               = var.password_min_length
     mailer_autoconfirm                                = var.mailer_autoconfirm
     mailer_secure_email_change_enabled                = var.mailer_secure_email_change_enabled
+    mailer_subjects_confirmation                      = "Confirm your signup"
+    mailer_templates_confirmation_content             = local.confirmation_email_template_content
     security_update_password_require_reauthentication = var.security_update_password_require_reauthentication
     smtp_max_frequency                                = var.smtp_max_frequency
   }
 
   resolved_preview_project_name = coalesce(var.preview_project_name, var.project_name)
   resolved_preview_site_url     = coalesce(var.preview_site_url, var.site_url)
-  resolved_preview_redirect_urls = coalesce(
-    var.preview_additional_redirect_urls,
-    var.additional_redirect_urls,
-  )
+  resolved_preview_redirect_urls = distinct(concat(
+    coalesce(
+      var.preview_additional_redirect_urls,
+      var.additional_redirect_urls,
+    ),
+    var.preview_vercel_team_slug == null ? [] : [
+      "https://*-${var.preview_vercel_team_slug}.vercel.app/**",
+    ],
+  ))
 }
 
 check "preview_project_name_configured" {

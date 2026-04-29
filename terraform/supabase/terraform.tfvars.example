@@ -16,6 +16,7 @@ production_additional_redirect_urls = [
 ]
 
 preview_site_url = "https://preview.your-production-domain.example"
+preview_vercel_team_slug = "your-team-or-account-slug"
 preview_additional_redirect_urls = [
   "http://127.0.0.1:3000/**",
   "http://localhost:3000/**",

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import AccountForm from './account-form'
+import { createProfileQueryOutcome } from '@/lib/account-profile'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function Account() {
@@ -14,6 +15,7 @@ export default async function Account() {
   }
 
   let profile = null
+  let profileStoreAvailable = true
 
   if (user.id) {
     const { data, error, status } = await supabase
@@ -22,12 +24,16 @@ export default async function Account() {
       .eq('id', user.id)
       .single()
 
-    if (error && status !== 406) {
-      throw error
-    }
-
-    profile = data
+    const profileQueryOutcome = createProfileQueryOutcome({ data, error, status })
+    profile = profileQueryOutcome.profile
+    profileStoreAvailable = profileQueryOutcome.profileStoreAvailable
   }
 
-  return <AccountForm claims={{ sub: user.id, email: user.email }} profile={profile} />
+  return (
+    <AccountForm
+      claims={{ sub: user.id, email: user.email }}
+      profile={profile}
+      profileStoreAvailable={profileStoreAvailable}
+    />
+  )
 }
