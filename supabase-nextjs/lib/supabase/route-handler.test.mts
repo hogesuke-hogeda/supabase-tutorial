@@ -3,9 +3,9 @@ import test from 'node:test'
 
 import { NextRequest, NextResponse } from 'next/server.js'
 
-import { applyCookiesToRequestAndResponse } from './route-handler.ts'
+import { applyCookiesToRequestAndResponse } from './cookies.ts'
 
-test('applies Supabase auth cookies to redirect responses', () => {
+test('applies Supabase auth cookies to request and redirect responses', () => {
   const request = new NextRequest('https://example.com/auth/confirm')
   const response = NextResponse.redirect(new URL('/account', request.url))
 

@@ -6,17 +6,19 @@ export function resolveDeploymentUrl(
   requestHeaders?: RequestHeaders,
   preferredUrl?: string,
 ) {
-  const explicitUrl = normalizeAbsoluteUrl(preferredUrl)
+  const vercelEnvironment = env.VERCEL_ENV?.trim()
+  const preferredDeploymentUrl = normalizeAbsoluteUrl(preferredUrl)
 
-  if (explicitUrl) {
-    return explicitUrl
+  if (preferredDeploymentUrl) {
+    return preferredDeploymentUrl
   }
 
-  const vercelEnvironment = env.VERCEL_ENV?.trim()
-  const productionUrl = normalizeVercelUrl(env.VERCEL_PROJECT_PRODUCTION_URL)
+  if (vercelEnvironment === 'production') {
+    const productionUrl = normalizeVercelUrl(env.VERCEL_PROJECT_PRODUCTION_URL)
 
-  if (vercelEnvironment === 'production' && productionUrl) {
-    return productionUrl
+    if (productionUrl) {
+      return productionUrl
+    }
   }
 
   const requestUrl = resolveRequestUrl(requestHeaders)
@@ -25,25 +27,15 @@ export function resolveDeploymentUrl(
     return requestUrl
   }
 
-  const branchUrl = normalizeVercelUrl(env.VERCEL_BRANCH_URL)
+  if (vercelEnvironment === 'preview') {
+    const branchUrl = normalizeVercelUrl(env.VERCEL_BRANCH_URL)
 
-  if (vercelEnvironment === 'preview' && branchUrl) {
-    return branchUrl
+    if (branchUrl) {
+      return branchUrl
+    }
   }
 
-  const vercelUrl = normalizeVercelUrl(env.VERCEL_URL)
-
-  if (vercelUrl) {
-    return vercelUrl
-  }
-
-  const siteUrl = normalizeSiteUrl(env.SITE_URL)
-
-  if (siteUrl) {
-    return siteUrl
-  }
-
-  return undefined
+  return normalizeVercelUrl(env.VERCEL_URL) ?? normalizeSiteUrl(env.SITE_URL)
 }
 
 function normalizeVercelUrl(value: string | undefined) {

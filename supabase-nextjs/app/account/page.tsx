@@ -14,20 +14,7 @@ export default async function Account() {
     redirect('/login')
   }
 
-  let profile = null
-  let profileStoreAvailable = true
-
-  if (user.id) {
-    const { data, error, status } = await supabase
-      .from('profiles')
-      .select(`full_name, username, website, avatar_url`)
-      .eq('id', user.id)
-      .single()
-
-    const profileQueryOutcome = createProfileQueryOutcome({ data, error, status })
-    profile = profileQueryOutcome.profile
-    profileStoreAvailable = profileQueryOutcome.profileStoreAvailable
-  }
+  const { profile, profileStoreAvailable } = await loadProfileState(supabase, user.id)
 
   return (
     <AccountForm
@@ -36,4 +23,17 @@ export default async function Account() {
       profileStoreAvailable={profileStoreAvailable}
     />
   )
+}
+
+async function loadProfileState(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+) {
+  const { data, error, status } = await supabase
+    .from('profiles')
+    .select(`full_name, username, website, avatar_url`)
+    .eq('id', userId)
+    .single()
+
+  return createProfileQueryOutcome({ data, error, status })
 }
