@@ -1,110 +1,114 @@
 # supabase-tutorial
 
-ローカルの Supabase に Next.js から接続して認証フローを確認するための最小構成です。
-`supabase/` に Supabase CLI 用の設定、`supabase-nextjs/` に接続確認用の Next.js アプリを置いています。
+ローカル Supabase と Hosted Supabase の両方を使って、Next.js 16 から Supabase Auth の動作を確認するためのチュートリアルです。
+
+このリポジトリには次の 3 つが含まれます。
+
+- `supabase/`: Supabase CLI で動かす local 開発設定
+- `supabase-nextjs/`: 接続確認用の Next.js 16 アプリ
+- `terraform/`: Hosted Supabase と Vercel を構成する Terraform
 
 ## できること
 
-- Supabase Auth の email/password サインアップとログインを試す
+- email/password のサインアップとログインを試す
 - Server Component / Server Action / Route Handler / Proxy から Supabase SSR を使う
-- devcontainer / Docker 内でも browser-side と server-side の Supabase 接続先を分けて設定できる
+- local Supabase と Hosted Supabase を切り替えて同じアプリで動作確認する
+- Vercel の Production / Preview で Supabase 接続先を分ける
 
 ## ディレクトリ構成
 
+- `.devcontainer/`: devcontainer 設定。attach 時に local Supabase を自動起動する
 - `.codex/superpowers/`: 開発用スキル群。Git submodule として管理
-- `supabase/`: Supabase CLI のローカル開発設定
-- `supabase-nextjs/`: 接続確認用の Next.js 16 アプリ
-- `.devcontainer/`: 開発コンテナ設定。attach 時に container 内から Supabase を自動起動する
+- `bin/`: local Supabase の起動と DB 初期化スクリプト
+- `supabase/`: local Supabase の設定、migration、email template
+- `supabase-nextjs/`: Next.js 16 アプリ
+- `terraform/supabase/`: Hosted Supabase の Terraform
+- `terraform/vercel/`: Vercel の Terraform
 
 ## 前提条件
 
-- host 側で Docker が使えること
+- Docker が使えること
 - devcontainer を使えること
-- hosted workflow を使う場合は `SUPABASE_ACCESS_TOKEN` を用意できること
+- local workflow では devcontainer 内で作業すること
+- Hosted workflow では `SUPABASE_ACCESS_TOKEN` を用意できること
+- Vercel workflow では `VERCEL_API_TOKEN` と team slug または ID を用意できること
 
-このリポジトリの devcontainer は `initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から Supabase を起動します。
-devcontainer 内には Supabase CLI を同梱しているため、`supabase status` や `bin/init-db.sh` も container 内の `supabase` コマンドで完結します。
-さらに Terraform CLI も同梱しているため、hosted workflow の `terraform` / `supabase` コマンドも devcontainer 内で完結します。
-`supabase start` の localhost healthcheck は、container 内で `socat` による `127.0.0.1` プロキシを張って通します。
-参考:
-- Supabase Docs の CLI ガイド: https://supabase.com/docs/guides/cli/getting-started
-- Supabase Docs のローカル開発ガイド: https://supabase.com/docs/guides/local-development
-- この devcontainer が使っている release asset の配布元: https://github.com/supabase/cli/releases
-- Terraform release 一覧: https://releases.hashicorp.com/terraform/
+この devcontainer には Supabase CLI と Terraform CLI が入っています。`initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から local Supabase を起動します。
 
-## Submodule の初期化と更新
+## セットアップ
 
-clone 後に `.codex/superpowers` を取得するには以下を実行してください。
+clone 後に submodule を取得します。
 
 ```bash
 git submodule update --init --recursive
 ```
 
-`.codex/superpowers` を upstream の最新に更新する場合は以下です。
+`.codex/superpowers` を更新する場合は以下を使います。
 
 ```bash
 git submodule update --remote .codex/superpowers
-```
-
-更新後は親リポジトリ側で submodule の参照コミット差分をコミットします。
-
-```bash
 git add .codex/superpowers
 git commit -m "Update superpowers submodule"
 ```
 
-## 起動手順
+## 最短で試す: Local workflow
 
-### Local workflow
+local Supabase だけを試すなら、最初はこの手順だけで十分です。Terraform は不要です。
 
-local Supabase だけを使う場合は、Terraform は不要です。先に local stack を起動して DB を初期化します。
+1. devcontainer でこのリポジトリを開く
+2. local Supabase を起動する
+3. DB を初期化する
+4. Next.js 用の local env を作る
+5. アプリを起動する
 
 ```bash
 /bin/bash bin/start-supabase.sh
 /bin/bash bin/init-db.sh
-```
-
-これらのコマンドは devcontainer 内で実行する前提です。
-
-`/bin/bash bin/init-db.sh up` を使うと、未適用のマイグレーションだけを反映できます。
-
-Next.js の local 用 env を作成し、`supabase-nextjs/README.md` を見ながら `<gateway-ip>` と `supabase status` の publishable key を実値に置き換えます。`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` には local Supabase の publishable key を入れます。
-
-```bash
 cd supabase-nextjs
 cp .env.supabase.local.example .env.supabase.local
-```
-
-`.env.supabase.local` には、`<gateway-ip>` と `<local-publishable-key>` を実際の値に置き換えてから使います。`<local-publishable-key>` は local Supabase の `supabase status` に表示される publishable key です。
-
-```bash
 npm install
 npm run dev:local
 ```
 
-### Hosted workflow
+`.env.supabase.local` では次を実値に置き換えます。
 
-hosted Supabase を使う場合も、Terraform と `supabase` CLI は devcontainer 内で実行する前提です。同じリポジトリ checkout を devcontainer で開いた状態で、以下を順に実行します。
+- `<gateway-ip>`: `ip route | awk '/default/ { print $3 }'` の結果
+- `<local-publishable-key>`: `supabase status` に表示される publishable key
 
-まず Terraform で project を作成します。
+env の詳細は [supabase-nextjs/README.md](supabase-nextjs/README.md) を参照してください。
+
+### Local workflow の補足
+
+- `bin/init-db.sh` は引数なしだと `reset` で全 migration を再適用します
+- `bin/init-db.sh up` を使うと未適用 migration だけを反映します
+- local の redirect URL は `supabase/config.toml` で管理します
+- ブラウザでは `http://localhost:3000` を開きます。トップページは `/login` へリダイレクトします
+
+## Hosted workflow
+
+Hosted Supabase を使う場合は、先に Supabase project を Terraform で作成してから `supabase link` と `supabase db push --linked` を実行します。
 
 ```bash
 cp terraform/supabase/terraform.tfvars.example terraform/supabase/terraform.tfvars
 export SUPABASE_ACCESS_TOKEN=<your-access-token>
 terraform -chdir=terraform/supabase init
 terraform -chdir=terraform/supabase plan
-terraform -chdir=terraform/supabase apply -target=supabase_project.development
+terraform -chdir=terraform/supabase apply -target=supabase_project.preview
+terraform -chdir=terraform/supabase apply -target=supabase_project.production
 terraform -chdir=terraform/supabase apply
 terraform -chdir=terraform/supabase output
 ```
 
-初めて hosted project を作る場合は、先に `terraform -chdir=terraform/supabase apply -target=supabase_project.development` で project だけを作成し、その後の通常 apply で settings を適用します。Supabase project 作成直後は hosted services が完全に起動するまで時間がかかるため、project 作成と settings 適用を同じ apply にまとめないようにしています。既に project が作成済みの場合は、通常の `terraform -chdir=terraform/supabase apply` だけで差分を反映できます。
+初回は preview / production project を先に作ってから、最後に通常の `apply` で settings を入れます。project 作成直後は hosted services の起動待ちが必要なため、1 回の apply にまとめない前提です。
 
-`project_ref` は `supabase link --project-ref <project_ref>` に使い、`project_url` は `https://<project-ref>.supabase.co` そのものです。`.env.supabase.cloud` には Terraform の `project_url` 出力をそのまま使います。
+Terraform の出力で確認する主な値は次のとおりです。
 
-Terraform の apply 後に、Supabase Dashboard の project Connect dialog か `Settings > API Keys` で hosted project の publishable key を取得して `.env.supabase.cloud` の `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` に使います。こちらは local の publishable key とは別に、hosted project の publishable key です。
+- `preview_project_ref`
+- `preview_project_url`
+- `production_project_ref`
+- `production_project_url`
 
-Hosted Supabase でこのチュートリアルの email confirmation をそのまま試す場合は、Supabase 側のメール送信設定にも注意してください。既定の hosted SMTP 制限では確認メールの挙動をローカルと同じように再現できないことがあるため、必要に応じて team member 宛てで試すか、custom SMTP を設定してください。
+続いて接続したい project に link し、migration を反映します。
 
 ```bash
 supabase login
@@ -112,27 +116,66 @@ supabase link --project-ref <project_ref>
 supabase db push --linked
 ```
 
-Next.js の cloud 用 env を作成し、`supabase-nextjs/README.md` を見ながら `project_url` と hosted publishable key を実値に置き換えます。
+その後、Next.js 側の cloud env を作って起動します。
 
 ```bash
 cd supabase-nextjs
 cp .env.supabase.cloud.example .env.supabase.cloud
-```
-
-`.env.supabase.cloud` には Terraform の `project_url` 出力と hosted publishable key を実際の値に置き換えてから使います。`project_url` はすでに `https://<project-ref>.supabase.co` の形式です。
-
-```bash
 npm install
 npm run dev:cloud
 ```
 
-### ブラウザで確認
+`.env.supabase.cloud` では、接続先に対応する hosted project の URL と publishable key を設定します。詳細は [supabase-nextjs/README.md](supabase-nextjs/README.md) を参照してください。
 
-- アプリ: `http://localhost:3000`
+### Hosted workflow の注意点
 
-トップページを開くと `/login` へリダイレクトし、Supabase Auth のログイン画面が表示されます。local workflow は local project に、Hosted workflow は hosted project に接続します。
+- hosted の redirect 設定と email template は `terraform/supabase/` で管理します
+- `terraform/supabase/terraform.tfvars` の placeholder を残したまま apply しないでください
+- Hosted Supabase の確認メールは local と送信制約が異なるため、必要に応じて custom SMTP を設定してください
+- local で hosted Supabase を試す場合は `.env.supabase.cloud` に `SITE_URL=http://localhost:3000` を入れます
 
-## 主な画面
+## Vercel workflow
 
-- `/login`: email / password の入力、ログイン、サインアップ、確認メール案内メッセージ
-- `/account`: ログイン中ユーザーの email 表示、プロフィール編集、サインアウト
+Vercel を使う場合は、Hosted Supabase を作成したあとで Vercel project を Terraform で作成します。
+
+```bash
+cp terraform/vercel/terraform.tfvars.example terraform/vercel/terraform.tfvars
+export VERCEL_API_TOKEN=<your-vercel-api-token>
+terraform -chdir=terraform/vercel init
+terraform -chdir=terraform/vercel plan
+terraform -chdir=terraform/vercel apply
+terraform -chdir=terraform/vercel output
+```
+
+`terraform/vercel/terraform.tfvars` には次を設定します。
+
+- `team_id`
+- `github_repository`
+- `production_supabase_url`
+- `production_supabase_publishable_key`
+- `preview_supabase_url`
+- `preview_supabase_publishable_key`
+
+この stack は `supabase-nextjs` を root directory にした Vercel Project を作成し、Production には production Supabase、Preview には preview Supabase を割り当てます。Vercel 上では system environment variables を使って redirect URL を解決するため、Preview Deployment ごとに正しい確認リンクを返せます。
+
+初回は `main` を 1 回 push して Production Deployment を作っておく運用です。
+
+```bash
+git switch main
+git pull --ff-only origin main
+git commit --allow-empty -m "chore: trigger production deploy"
+git push origin main
+```
+
+## どこを見ればよいか
+
+- local / cloud env の詳細: [supabase-nextjs/README.md](supabase-nextjs/README.md)
+- Vercel 導入時の設計メモ: [docs/plans/2026-04-26-vercel-deployment.md](docs/plans/2026-04-26-vercel-deployment.md)
+- local redirect 設定: [supabase/config.toml](supabase/config.toml)
+
+## 参考
+
+- Supabase CLI getting started: https://supabase.com/docs/guides/cli/getting-started
+- Supabase local development: https://supabase.com/docs/guides/local-development
+- Supabase CLI releases: https://github.com/supabase/cli/releases
+- Terraform releases: https://releases.hashicorp.com/terraform/

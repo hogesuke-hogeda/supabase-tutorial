@@ -16,14 +16,25 @@ variable "organization_id" {
   description = "Supabase organization slug from Organization Settings."
 }
 
-variable "project_name" {
+variable "production_project_name" {
   type        = string
-  description = "Name of the hosted development project."
+  description = "Name of the hosted production project."
 }
 
-variable "database_password" {
+variable "preview_project_name" {
   type        = string
-  description = "Password for the hosted Postgres database."
+  description = "Name of the hosted shared preview project."
+}
+
+variable "production_database_password" {
+  type        = string
+  description = "Password for the hosted production Postgres database."
+  sensitive   = true
+}
+
+variable "preview_database_password" {
+  type        = string
+  description = "Password for the hosted preview Postgres database."
   sensitive   = true
 }
 
@@ -33,19 +44,89 @@ variable "region" {
   default     = "ap-northeast-1"
 }
 
-variable "site_url" {
+variable "production_site_url" {
   type        = string
-  description = "Base URL for hosted auth redirects."
-  default     = "http://localhost:3000"
+  description = "Fallback base URL for hosted production auth redirects."
+
+  validation {
+    condition     = can(regex("^https?://", var.production_site_url))
+    error_message = "production_site_url must start with http:// or https://."
+  }
+
+  validation {
+    condition     = !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", var.production_site_url))
+    error_message = "production_site_url must not use the reserved .example placeholder domain."
+  }
 }
 
-variable "additional_redirect_urls" {
+variable "preview_site_url" {
+  type        = string
+  description = "Fallback base URL for hosted preview auth redirects."
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.preview_site_url == null || can(regex("^https?://", var.preview_site_url))
+    error_message = "preview_site_url must start with http:// or https://."
+  }
+
+  validation {
+    condition = var.preview_site_url == null || !can(
+      regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", var.preview_site_url)
+    )
+    error_message = "preview_site_url must not use the reserved .example placeholder domain."
+  }
+}
+
+variable "production_additional_redirect_urls" {
   type        = list(string)
-  description = "Allowed additional auth redirect URLs."
+  description = "Allowed additional auth redirect URLs for the production project."
+
+  validation {
+    condition = alltrue([
+      for url in var.production_additional_redirect_urls : can(regex("^https?://", url))
+    ])
+    error_message = "production_additional_redirect_urls entries must start with http:// or https://."
+  }
+
+  validation {
+    condition = alltrue([
+      for url in var.production_additional_redirect_urls :
+      !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", url))
+    ])
+    error_message = "production_additional_redirect_urls entries must not use the reserved .example placeholder domain."
+  }
+}
+
+variable "preview_additional_redirect_urls" {
+  type        = list(string)
+  description = "Allowed additional auth redirect URLs for the preview project."
   default = [
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
+    "http://127.0.0.1:3000/auth/confirm",
+    "http://localhost:3000/auth/confirm",
   ]
+
+  validation {
+    condition = alltrue([
+      for url in var.preview_additional_redirect_urls : can(regex("^https?://", url))
+    ])
+    error_message = "preview_additional_redirect_urls entries must start with http:// or https://."
+  }
+
+  validation {
+    condition = alltrue([
+      for url in var.preview_additional_redirect_urls :
+      !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", url))
+    ])
+    error_message = "preview_additional_redirect_urls entries must not use the reserved .example placeholder domain."
+  }
+}
+
+variable "preview_vercel_team_slug" {
+  type        = string
+  description = "Vercel team or account slug used to derive the preview redirect wildcard."
+  default     = null
+  nullable    = true
 }
 
 variable "jwt_expiry" {
@@ -96,15 +177,56 @@ variable "smtp_max_frequency" {
   default     = 1
 }
 
-resource "supabase_project" "development" {
+locals {
+  confirmation_email_template_content = trimspace(file("${path.root}/../../supabase/templates/confirmation.html"))
+
+  common_auth_settings = {
+    disable_signup                                    = var.disable_signup
+    external_email_enabled                            = var.external_email_enabled
+    jwt_exp                                           = var.jwt_expiry
+    password_min_length                               = var.password_min_length
+    mailer_autoconfirm                                = var.mailer_autoconfirm
+    mailer_secure_email_change_enabled                = var.mailer_secure_email_change_enabled
+    mailer_subjects_confirmation                      = "Confirm your signup"
+    mailer_templates_confirmation_content             = local.confirmation_email_template_content
+    security_update_password_require_reauthentication = var.security_update_password_require_reauthentication
+    smtp_max_frequency                                = var.smtp_max_frequency
+  }
+
+  resolved_preview_redirect_urls = distinct(concat(
+    var.preview_additional_redirect_urls,
+    var.preview_vercel_team_slug == null ? [] : [
+      "https://*-${var.preview_vercel_team_slug}.vercel.app/**",
+    ],
+  ))
+}
+
+moved {
+  from = supabase_project.development
+  to   = supabase_project.preview
+}
+
+moved {
+  from = supabase_settings.development
+  to   = supabase_settings.preview
+}
+
+resource "supabase_project" "production" {
   organization_id   = var.organization_id
-  name              = var.project_name
-  database_password = var.database_password
+  name              = var.production_project_name
+  database_password = var.production_database_password
   region            = var.region
 }
 
-resource "supabase_settings" "development" {
-  project_ref = supabase_project.development.id
+resource "supabase_project" "preview" {
+  organization_id   = var.organization_id
+  name              = var.preview_project_name
+  database_password = var.preview_database_password
+  region            = var.region
+}
+
+resource "supabase_settings" "production" {
+  project_ref = supabase_project.production.id
 
   api = jsonencode({
     db_schema            = "public,graphql_public"
@@ -112,16 +234,29 @@ resource "supabase_settings" "development" {
     max_rows             = 1000
   })
 
-  auth = jsonencode({
-    site_url                                          = var.site_url
-    uri_allow_list                                    = join(",", var.additional_redirect_urls)
-    disable_signup                                    = var.disable_signup
-    external_email_enabled                            = var.external_email_enabled
-    jwt_exp                                           = var.jwt_expiry
-    password_min_length                               = var.password_min_length
-    mailer_autoconfirm                                = var.mailer_autoconfirm
-    mailer_secure_email_change_enabled                = var.mailer_secure_email_change_enabled
-    security_update_password_require_reauthentication = var.security_update_password_require_reauthentication
-    smtp_max_frequency                                = var.smtp_max_frequency
+  auth = jsonencode(merge(
+    local.common_auth_settings,
+    {
+      site_url       = var.production_site_url
+      uri_allow_list = join(",", var.production_additional_redirect_urls)
+    }
+  ))
+}
+
+resource "supabase_settings" "preview" {
+  project_ref = supabase_project.preview.id
+
+  api = jsonencode({
+    db_schema            = "public,graphql_public"
+    db_extra_search_path = "public,extensions"
+    max_rows             = 1000
   })
+
+  auth = jsonencode(merge(
+    local.common_auth_settings,
+    {
+      site_url       = var.preview_site_url
+      uri_allow_list = join(",", local.resolved_preview_redirect_urls)
+    }
+  ))
 }

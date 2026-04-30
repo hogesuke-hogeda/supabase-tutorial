@@ -1,3 +1,6 @@
 [submodule ".codex/superpowers"]
 	path = .codex/superpowers
 	url = https://github.com/obra/superpowers.git
+[submodule ".codex/agent-skills"]
+	path = .codex/agent-skills
+	url = https://github.com/addyosmani/agent-skills.git

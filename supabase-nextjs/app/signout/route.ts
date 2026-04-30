@@ -1,19 +1,22 @@
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { type NextRequest, NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@/lib/supabase/route-handler'
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
+  const response = NextResponse.redirect(new URL('/login', req.url), {
+    status: 302,
+  })
+  const supabase = createRouteHandlerClient(req, response)
 
   // Check if a user's logged in
-  const { data: claimsData } = await supabase.auth.getClaims()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (claimsData?.claims) {
+  if (user) {
     await supabase.auth.signOut()
   }
 
   revalidatePath('/', 'layout')
-  return NextResponse.redirect(new URL('/login', req.url), {
-    status: 302,
-  })
+  return response
 }
