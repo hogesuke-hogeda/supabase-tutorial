@@ -1,25 +1,54 @@
 # supabase-nextjs
 
-local Supabase と hosted Supabase のどちらにも接続して、Next.js 16 から Supabase Auth の動作を確認するためのアプリです。
+local Supabase と Hosted Supabase の両方に接続して、Next.js 16 から Supabase Auth の動作を確認するためのアプリです。
 
-## Setup
+## 役割
 
-このアプリは local Supabase 用と cloud Supabase 用で env ファイルを分けています。local 用と cloud 用はそれぞれ別に作成し、必要な方のファイルを `dotenvx` 経由で読み込んで起動します。
+- email/password のサインアップとログインを試す
+- Server Component / Server Action / Route Handler / Proxy から Supabase SSR を確認する
+- local と hosted の接続先を env ファイルで切り替える
 
-signup confirmation の redirect URL は次の優先順位で決まります。
+## 起動前にやること
 
-- Vercel 上では `VERCEL_TARGET_ENV` / `VERCEL_ENV` と `VERCEL_URL` / `VERCEL_PROJECT_PRODUCTION_URL`
-- local や non-Vercel 実行では `SITE_URL`
+このアプリは接続先ごとに env ファイルを分けています。
 
-そのため、local 実行用の env には `SITE_URL=http://localhost:3000` を入れておきます。Vercel deploy では `SITE_URL` は不要で、Project Settings の `Automatically expose System Environment Variables` を有効にします。
+- local Supabase を使う: `.env.supabase.local`
+- Hosted Supabase を使う: `.env.supabase.cloud`
 
-### Local
+依存関係をまだ入れていない場合は先に実行します。
+
+```bash
+npm install
+```
+
+`dotenvx` は依存関係として入るので、追加のラッパースクリプトは不要です。
+
+## Redirect URL の決まり方
+
+signup confirmation で使う `emailRedirectTo` は、実行環境に応じて次の順序で解決します。
+
+1. フォームから渡された現在の URL
+2. Vercel Production では `VERCEL_PROJECT_PRODUCTION_URL`
+3. request headers から組み立てた現在の origin
+4. Vercel Preview では `VERCEL_BRANCH_URL`
+5. `VERCEL_URL`
+6. `SITE_URL`
+
+要点は次のとおりです。
+
+- local 実行では通常 `SITE_URL=http://localhost:3000` を使います
+- Vercel Preview では、固定の production URL ではなく preview deployment の URL を優先します
+- Vercel 上では system environment variables を有効にしておく前提です
+
+実装は [lib/deployment-url.ts](lib/deployment-url.ts) にあります。
+
+## Local Supabase 用 env
 
 ```bash
 cp .env.supabase.local.example .env.supabase.local
 ```
 
-`.env.supabase.local` は devcontainer / Docker 内で動かす local Supabase につなぐ設定です。`<gateway-ip>` と `supabase status` の publishable key を実際の値に置き換えます。
+`.env.supabase.local` は devcontainer / Docker 内で動く Next.js から local Supabase へ接続するための設定です。
 
 ```env
 SITE_URL=http://localhost:3000
@@ -28,50 +57,62 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key>
 ```
 
-`<gateway-ip>` は `ip route | awk '/default/ { print $3 }'` の結果です。`<local-publishable-key>` は local Supabase の `supabase status` に表示される publishable key です。
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` にはこの local publishable key を入れます。
-`SITE_URL` は local signup confirmation を `http://localhost:3000/auth/confirm` に戻すために使います。
+置き換える値は次の 2 つです。
 
-### Cloud
+- `<gateway-ip>`: `ip route | awk '/default/ { print $3 }'` の結果
+- `<local-publishable-key>`: `supabase status` に表示される publishable key
+
+変数の意味は次のとおりです。
+
+- `SUPABASE_SERVER_URL`: server-side から到達する local Supabase URL
+- `NEXT_PUBLIC_SUPABASE_URL`: browser-side から到達する local Supabase URL
+- `SITE_URL`: signup confirmation を `http://localhost:3000/auth/confirm` に戻すための base URL
+
+## Hosted Supabase 用 env
 
 ```bash
 cp .env.supabase.cloud.example .env.supabase.cloud
 ```
 
-`.env.supabase.cloud` は hosted Supabase につなぐ設定です。`<project-url>` は Terraform の `preview_project_url` か `production_project_url` 出力で、すでに `https://<project-ref>.supabase.co` の形式です。local で hosted Supabase を確認するときは `SITE_URL` も `http://localhost:3000` にしておきます。
+`.env.supabase.cloud` は Hosted Supabase に接続するための設定です。
 
 ```env
 SITE_URL=http://localhost:3000
-SUPABASE_SERVER_URL=<project-url>
-NEXT_PUBLIC_SUPABASE_URL=<project-url>
+SUPABASE_SERVER_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<cloud-publishable-key>
 ```
 
-- `<project-ref>`: Terraform の `preview_project_ref` か `production_project_ref` 出力。`supabase link --project-ref <project_ref>` にも使います
-- `<project-url>`: Terraform の `preview_project_url` か `production_project_url` 出力。`.env.supabase.cloud` にそのままコピーします
-- `<cloud-publishable-key>`: Terraform の `apply` 後に Supabase Dashboard の Project Connect dialog か `Settings > API Keys` で確認する publishable key
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` にはこの hosted publishable key を入れます。
+置き換える値は次のとおりです。
 
-## Run
+- `<project-ref>`: Terraform の `preview_project_ref` または `production_project_ref`
+- `<cloud-publishable-key>`: Hosted Supabase の publishable key
 
-```bash
-npm install
-```
+補足:
 
-`npm install` で `dotenvx` も入るので、追加のラッパースクリプトは不要です。
+- local で hosted Supabase を試すなら `SITE_URL=http://localhost:3000` を入れます
+- Vercel 上では deployment ごとの URL を使うので、`SITE_URL` は必須ではありません
+- `supabase link --project-ref <project_ref>` に使うのもこの project ref です
 
-実行するのは `npm run dev:local` か `npm run dev:cloud` のどちらか一方です。local Supabase を使う場合は:
+## 起動
+
+local Supabase につなぐ場合:
 
 ```bash
 npm run dev:local
 ```
 
-hosted Supabase を使う場合は:
+Hosted Supabase につなぐ場合:
 
 ```bash
 npm run dev:cloud
 ```
 
-どちらのコマンドも、対応する env ファイルを `dotenvx run -f ... -- next dev` で読み込んで起動します。
+どちらも `dotenvx run -f ... -- next dev` で対応する env を読み込んで起動します。
 
-ブラウザで `http://localhost:3000` を開いて確認します。
+ブラウザでは `http://localhost:3000` を開きます。
+
+## 関連ドキュメント
+
+- リポジトリ全体の流れ: [../README.md](../README.md)
+- local Supabase の設定: [../supabase/config.toml](../supabase/config.toml)
