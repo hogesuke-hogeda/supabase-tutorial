@@ -16,13 +16,6 @@ variable "organization_id" {
   description = "Supabase organization slug from Organization Settings."
 }
 
-variable "project_name" {
-  type        = string
-  description = "Deprecated alias for preview_project_name."
-  default     = null
-  nullable    = true
-}
-
 variable "production_project_name" {
   type        = string
   description = "Name of the hosted production project."
@@ -31,16 +24,6 @@ variable "production_project_name" {
 variable "preview_project_name" {
   type        = string
   description = "Name of the hosted shared preview project."
-  default     = null
-  nullable    = true
-}
-
-variable "database_password" {
-  type        = string
-  description = "Deprecated alias for preview_database_password."
-  default     = null
-  nullable    = true
-  sensitive   = true
 }
 
 variable "production_database_password" {
@@ -52,8 +35,6 @@ variable "production_database_password" {
 variable "preview_database_password" {
   type        = string
   description = "Password for the hosted preview Postgres database."
-  default     = null
-  nullable    = true
   sensitive   = true
 }
 
@@ -61,22 +42,6 @@ variable "region" {
   type        = string
   description = "Supabase region code."
   default     = "ap-northeast-1"
-}
-
-variable "site_url" {
-  type        = string
-  description = "Deprecated alias for preview_site_url."
-  default     = "http://localhost:3000"
-
-  validation {
-    condition     = can(regex("^https?://", var.site_url))
-    error_message = "site_url must start with http:// or https://."
-  }
-
-  validation {
-    condition     = !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", var.site_url))
-    error_message = "site_url must not use the reserved .example placeholder domain."
-  }
 }
 
 variable "production_site_url" {
@@ -113,30 +78,6 @@ variable "preview_site_url" {
   }
 }
 
-variable "additional_redirect_urls" {
-  type        = list(string)
-  description = "Deprecated alias for preview_additional_redirect_urls."
-  default = [
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-  ]
-
-  validation {
-    condition = alltrue([
-      for url in var.additional_redirect_urls : can(regex("^https?://", url))
-    ])
-    error_message = "additional_redirect_urls entries must start with http:// or https://."
-  }
-
-  validation {
-    condition = alltrue([
-      for url in var.additional_redirect_urls :
-      !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", url))
-    ])
-    error_message = "additional_redirect_urls entries must not use the reserved .example placeholder domain."
-  }
-}
-
 variable "production_additional_redirect_urls" {
   type        = list(string)
   description = "Allowed additional auth redirect URLs for the production project."
@@ -160,18 +101,20 @@ variable "production_additional_redirect_urls" {
 variable "preview_additional_redirect_urls" {
   type        = list(string)
   description = "Allowed additional auth redirect URLs for the preview project."
-  default     = null
-  nullable    = true
+  default = [
+    "http://127.0.0.1:3000/auth/confirm",
+    "http://localhost:3000/auth/confirm",
+  ]
 
   validation {
-    condition = var.preview_additional_redirect_urls == null || alltrue([
+    condition = alltrue([
       for url in var.preview_additional_redirect_urls : can(regex("^https?://", url))
     ])
     error_message = "preview_additional_redirect_urls entries must start with http:// or https://."
   }
 
   validation {
-    condition = var.preview_additional_redirect_urls == null || alltrue([
+    condition = alltrue([
       for url in var.preview_additional_redirect_urls :
       !can(regex("^https?://[^/]+\\.example(?::[0-9]+)?(?:/|$)", url))
     ])
@@ -250,31 +193,12 @@ locals {
     smtp_max_frequency                                = var.smtp_max_frequency
   }
 
-  resolved_preview_project_name = coalesce(var.preview_project_name, var.project_name)
-  resolved_preview_site_url     = coalesce(var.preview_site_url, var.site_url)
   resolved_preview_redirect_urls = distinct(concat(
-    coalesce(
-      var.preview_additional_redirect_urls,
-      var.additional_redirect_urls,
-    ),
+    var.preview_additional_redirect_urls,
     var.preview_vercel_team_slug == null ? [] : [
       "https://*-${var.preview_vercel_team_slug}.vercel.app/**",
     ],
   ))
-}
-
-check "preview_project_name_configured" {
-  assert {
-    condition     = local.resolved_preview_project_name != null
-    error_message = "Set preview_project_name or deprecated project_name for the preview Supabase project."
-  }
-}
-
-check "preview_database_password_configured" {
-  assert {
-    condition     = coalesce(var.preview_database_password, var.database_password) != null
-    error_message = "Set preview_database_password or deprecated database_password for the preview Supabase project."
-  }
 }
 
 moved {
@@ -296,8 +220,8 @@ resource "supabase_project" "production" {
 
 resource "supabase_project" "preview" {
   organization_id   = var.organization_id
-  name              = local.resolved_preview_project_name
-  database_password = coalesce(var.preview_database_password, var.database_password)
+  name              = var.preview_project_name
+  database_password = var.preview_database_password
   region            = var.region
 }
 
@@ -331,7 +255,7 @@ resource "supabase_settings" "preview" {
   auth = jsonencode(merge(
     local.common_auth_settings,
     {
-      site_url       = local.resolved_preview_site_url
+      site_url       = var.preview_site_url
       uri_allow_list = join(",", local.resolved_preview_redirect_urls)
     }
   ))

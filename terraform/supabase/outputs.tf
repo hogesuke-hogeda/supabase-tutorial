@@ -30,20 +30,10 @@ output "preview_project_url" {
 
 output "preview_site_url" {
   description = "Fallback site URL configured for hosted preview auth redirects."
-  value       = local.resolved_preview_site_url
+  value       = var.preview_site_url
 }
 
 output "preview_additional_redirect_urls" {
   description = "Additional redirect URLs configured for the hosted preview project."
   value       = local.resolved_preview_redirect_urls
-}
-
-output "project_ref" {
-  description = "Deprecated alias for preview_project_ref."
-  value       = supabase_project.preview.id
-}
-
-output "project_url" {
-  description = "Deprecated alias for preview_project_url."
-  value       = "https://${supabase_project.preview.id}.supabase.co"
 }

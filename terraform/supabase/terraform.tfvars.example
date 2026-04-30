@@ -23,14 +23,6 @@ preview_additional_redirect_urls = [
   "https://*-your-team-or-account-slug.vercel.app/**",
 ]
 
-# Deprecated preview aliases can still feed preview-only values.
-# production_* inputs are still required because this stack now manages both
-# production and preview projects.
-# project_name              = "supabase-tutorial-preview"
-# database_password         = "replace-with-a-strong-password"
-# site_url                  = "http://localhost:3000"
-# additional_redirect_urls  = ["http://127.0.0.1:3000/auth/confirm"]
-
 jwt_expiry                                        = 3600
 disable_signup                                    = false
 external_email_enabled                            = true
