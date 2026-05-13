@@ -33,7 +33,9 @@
 - Hosted workflow では `SUPABASE_ACCESS_TOKEN` を用意できること
 - Vercel workflow では `VERCEL_API_TOKEN` と team slug または ID を用意できること
 
-この devcontainer には Supabase CLI と Terraform CLI が入っています。`initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から local Supabase を起動します。
+この devcontainer には Supabase CLI、Terraform CLI、Vercel CLI が入っています。`initializeCommand` で host 側 Docker network を作成し、`postAttachCommand` で container 内から local Supabase を起動します。
+
+devcontainer の CLI 追加を反映するには、設定変更後に Rebuild が必要です。
 
 ## セットアップ
 
@@ -137,6 +139,8 @@ npm run dev:cloud
 ## Vercel workflow
 
 Vercel を使う場合は、Hosted Supabase を作成したあとで Vercel project を Terraform で作成します。
+
+devcontainer を Rebuild したあと、`vercel login` や `vercel link` を container 内でそのまま実行できます。
 
 ```bash
 cp terraform/vercel/terraform.tfvars.example terraform/vercel/terraform.tfvars

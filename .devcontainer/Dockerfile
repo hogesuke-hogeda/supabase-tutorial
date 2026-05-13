@@ -69,4 +69,4 @@ RUN arch="$(dpkg --print-architecture)" && \
     install -m 0755 /tmp/terraform /usr/local/bin/terraform && \
     rm -f /tmp/terraform.zip /tmp/terraform /tmp/terraform_SHA256SUMS /tmp/terraform_SHA256SUMS.filtered
 
-RUN npm i -g @openai/codex
+RUN npm i -g @openai/codex@latest vercel
