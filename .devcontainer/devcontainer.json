@@ -38,7 +38,9 @@
     // docker outside of dockerを利用するための設定: https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
-    }
+    },
+    // GitHub CLI を devcontainer に追加する
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
 
