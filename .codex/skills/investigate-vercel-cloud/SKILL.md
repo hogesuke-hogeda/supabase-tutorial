@@ -38,10 +38,11 @@ env XDG_DATA_HOME=/tmp/vercel-data XDG_CACHE_HOME=/tmp/vercel-cache vercel whoam
    - `vercel inspect <deployment-url-or-id> --format=json`
 4. Inspect logs when diagnostics require them:
    - Build logs: `vercel inspect <deployment-url-or-id> --logs`
-   - Recent runtime/request logs: `vercel logs --project <project-name> --environment production --since 1h --no-follow`
-   - Preview runtime logs: `vercel logs --project <project-name> --environment preview --since 1h --no-follow`
+   - Recent runtime/request logs: `vercel logs --project <project-name> --environment production --since 1h --no-follow --no-branch`
+   - Preview runtime logs across all branches: `vercel logs --project <project-name> --environment preview --since 1h --no-follow --no-branch`
+   - Preview runtime logs for one branch: `vercel logs --project <project-name> --environment preview --branch <branch-name> --since 1h --no-follow`
    - Deployment-specific logs: `vercel logs <deployment-url-or-id> --no-follow`
-   - Error-focused logs: `vercel logs --project <project-name> --level error --since 1h --json`
+   - Error-focused project logs: `vercel logs --project <project-name> --level error --since 1h --json --no-branch`
    - Request-specific logs: `vercel logs --request-id <request-id> --json`
 5. Compare live state against Terraform and README expectations, especially root directory, Git repository, production branch, system environment variables, and Supabase-related env names.
 
@@ -51,6 +52,7 @@ env XDG_DATA_HOME=/tmp/vercel-data XDG_CACHE_HOME=/tmp/vercel-cache vercel whoam
 - Never print private environment variable values. Summarize names, environments, and whether values appear present.
 - Prefer JSON output when available; redact sensitive fields before reporting. Logs can contain secrets, cookies, auth headers, tokens, and PII.
 - Avoid long-running streams by default. Use `--no-follow`, `--since`, `--until`, `--limit`, `--level`, `--status-code`, or `--request-id` to bound log collection unless the user explicitly asks for live streaming.
+- Disable automatic git-branch filtering with `--no-branch` for production or project-wide log checks. Use `--branch <branch-name>` only when branch-scoped preview logs are the intended target.
 - Do not treat dashboard-only observations as primary evidence when the CLI can report the state.
 
 ## Reporting
